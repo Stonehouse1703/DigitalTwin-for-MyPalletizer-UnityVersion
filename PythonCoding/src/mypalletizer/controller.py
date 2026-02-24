@@ -3,6 +3,7 @@ import socket
 import time
 from typing import Optional
 
+from parso.python.tree import String
 from pymycobot import MyPalletizer260
 
 from .protocol import build_led_msg, build_move_msg, sync_build_move_msg
@@ -10,6 +11,9 @@ from .errors import RobotConnectionError
 
 
 class MyPalletizerController:
+
+
+
     _JOINT_LIMITS = {
         "j1": (-160.0, 160.0),
         "j2": (0, 90.0),
@@ -23,12 +27,14 @@ class MyPalletizerController:
         self.sock: Optional[socket.socket] = None
         self.udp_ip = ip
         self.udp_port = udp_port
+        self._sim_angles: list[float] = [0.0, 0.0, 0.0, 0.0]
 
         if mode in ("real", "both"):
             try:
                 self.mc = MyPalletizer260(port, baudrate)
                 time.sleep(2)
                 self.mc.power_on()
+                time.sleep(0.5)
                 print("✅ Connected to robot on port", port)
             except Exception as e:
                 raise RobotConnectionError(f"Could not connect to robot on port {port}.") from e
@@ -39,6 +45,7 @@ class MyPalletizerController:
         print("🛫 Starting in mode:", mode)
 
     def move_joints(self, j1, j2, j3, j4, speed=40):
+        self._sim_angles = [j1, j2, j3, j4]
         j1 = self._clamp("j1", j1)
         j2 = self._clamp("j2", j2)
         j3 = self._clamp("j3", j3)
@@ -53,6 +60,7 @@ class MyPalletizerController:
 
 
     def sync_move_joints(self, j1, j2, j3, j4, speed=40):
+        self._sim_angles = [j1, j2, j3, j4]
         j1 = self._clamp("j1", j1)
         j2 = self._clamp("j2", j2)
         j3 = self._clamp("j3", j3)
@@ -75,6 +83,23 @@ class MyPalletizerController:
         if self.mc:
             self.mc.set_color(r, g, b)
 
+    def get_angles(self) -> String:
+        if self.mode == "virtual":
+            return f"j1: {self._sim_angles[0]:.1f}, j2: {self._sim_angles[1]:.1f}, j3: {self._sim_angles[2]:.1f}, j4: {self._sim_angles[3]:.1f}"
+
+        if self.mode == "real":
+            if self.mc:
+                angles = self.mc.get_angles()
+                return f"j1: {angles[0]:.1f}, j2: {angles[1]:.1f}, j3: {angles[2]:.1f}, j4: {angles[3]:.1f}"
+            else:
+                raise RobotConnectionError("Not connected to robot.")
+
+        if self.mode == "both":
+            if self.mc:
+                angles = self.mc.get_angles()
+                return f"Real - j1: {angles[0]:.1f}, j2: {angles[1]:.1f}, j3: {angles[2]:.1f}, j4: {angles[3]:.1f} \nSim - j1: {self._sim_angles[0]:.1f}, j2: {self._sim_angles[1]:.1f}, j3: {self._sim_angles[2]:.1f}, j4: {self._sim_angles[3]:.1f}"
+            else:
+                raise RobotConnectionError("Not connected to robot.")
 
     def sleep(self, seconds: float):
         time.sleep(max(0.0, float(seconds)))

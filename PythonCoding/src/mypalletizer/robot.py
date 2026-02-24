@@ -3,6 +3,8 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Optional
 
+from parso.python.tree import String
+
 from .controller import MyPalletizerController
 from .errors import InvalidConfigError
 
@@ -48,7 +50,7 @@ class Robot:
         self.config = config
 
         self._impl = MyPalletizerController(
-            mode=config.mode.value,   # Enum → string
+            mode=config.mode.value,
             port=config.port,
             ip=config.ip,
             udp_port=config.udp_port,
@@ -65,6 +67,9 @@ class Robot:
 
     def set_color(self, r: int, g: int, b: int):
         self._impl.set_color(r, g, b)
+
+    def get_angles(self) -> String:
+        return self._impl.get_angles()
 
     def sleep(self, seconds: float):
         self._impl.sleep(seconds)

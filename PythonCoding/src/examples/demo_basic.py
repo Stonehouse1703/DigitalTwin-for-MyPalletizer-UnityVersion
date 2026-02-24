@@ -19,7 +19,7 @@ def main():
         robot.set_color(0, 0, 255)
         robot.move_joints(74, 85, 0, 0, speed=40)
         robot.sleep(5)
-        print("✅ Moved to position 1")
+        print(robot.get_angles())
 
         '''
         robot.set_color(255, 0, 255)
@@ -35,8 +35,11 @@ def main():
         '''
 
         robot.sync_move_joints(-160, 0, 0, 180, speed=100)
+        print(robot.get_angles())
 
-        robot.move_joints(0, 0, 0, 0, speed=120)
+
+        robot.sync_move_joints(0, 0, 0, 0, speed=120)
+        print(robot.get_angles())
 
 
 if __name__ == "__main__":
