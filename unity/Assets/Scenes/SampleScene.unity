@@ -2259,7 +2259,7 @@ AudioListener:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1176182730}
-  m_Enabled: 1
+  m_Enabled: 0
 --- !u!20 &1176182734
 Camera:
   m_ObjectHideFlags: 0
@@ -2322,7 +2322,6 @@ GameObject:
   - component: {fileID: 1255215232}
   - component: {fileID: 1255215233}
   - component: {fileID: 1255215235}
-  - component: {fileID: 1255215234}
   - component: {fileID: 1255215236}
   m_Layer: 0
   m_Name: MyPalletizer
@@ -2414,19 +2413,6 @@ ArticulationBody:
   m_Immovable: 1
   m_UseGravity: 0
   m_CollisionDetectionMode: 0
---- !u!114 &1255215234
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1255215231}
-  m_Enabled: 0
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: d9b4b5fa7d5bfed429c95d91fd47dce3, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: '::'
-  mc: {fileID: 0}
 --- !u!114 &1255215235
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2443,7 +2429,6 @@ MonoBehaviour:
   j2: {fileID: 1860462085}
   j3: {fileID: 1641935735}
   j4: {fileID: 1315468497}
-  useQueue: 1
 --- !u!114 &1255215236
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2516,8 +2501,8 @@ ArticulationBody:
   m_SwingZ: 2
   m_Twist: 1
   m_XDrive:
-    lowerLimit: -175
-    upperLimit: 175
+    lowerLimit: -180
+    upperLimit: 180
     stiffness: 0
     damping: 0
     forceLimit: 3.4028235e+38

@@ -59,8 +59,11 @@ class Robot:
 
     # ---------------- API ----------------
 
-    def move_joints(self, j1: float, j2: float, j3: float, j4: float, speed: int = 40):
-        self._impl.move_joints(j1, j2, j3, j4, speed=speed)
+    def send_angles(self, j1: float, j2: float, j3: float, j4: float, speed: int = 40):
+        self._impl.send_angles(j1, j2, j3, j4, speed=speed)
+
+    def send_angle(self, id: int, degree: float, speed: int = 40):
+        self._impl.send_angle(id, degree, speed=speed)
 
     def sync_move_joints(self, j1: float, j2: float, j3: float, j4: float, speed: int = 40):
         self._impl.sync_move_joints(j1, j2, j3, j4, speed=speed)

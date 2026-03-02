@@ -44,7 +44,7 @@ class MyPalletizerController:
 
         print("🛫 Starting in mode:", mode)
 
-    def move_joints(self, j1, j2, j3, j4, speed=40):
+    def send_angles(self, j1, j2, j3, j4, speed=40):
         self._sim_angles = [j1, j2, j3, j4]
         j1 = self._clamp("j1", j1)
         j2 = self._clamp("j2", j2)
@@ -57,6 +57,12 @@ class MyPalletizerController:
 
         if self.mc:
             self.mc.send_angles([j1, j2, j3, j4], speed)
+
+    def send_angle(self, id, degree, speed=40):
+        if self.sock:
+            raise NotImplemented
+        if self.mc:
+            self.mc.send_angle(id, degree, speed)
 
 
     def sync_move_joints(self, j1, j2, j3, j4, speed=40):
