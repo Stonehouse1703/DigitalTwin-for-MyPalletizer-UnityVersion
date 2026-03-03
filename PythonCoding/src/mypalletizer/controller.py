@@ -2,12 +2,17 @@
 import socket
 import time
 from typing import Optional
-
-from parso.python.tree import String
 from pymycobot import MyPalletizer260
-
-from .protocol import build_led_msg, build_move_msg, sync_build_move_msg, build_move_angle_msg
 from .errors import RobotConnectionError
+
+from .protocol import (
+    build_led_msg,
+    build_move_msg,
+    sync_build_move_msg,
+    build_move_angle_msg,
+    build_move_coord_msg,
+    build_move_coords_msg,
+)
 
 class MyPalletizerController:
 
@@ -16,6 +21,13 @@ class MyPalletizerController:
         "j2": (0, 90.0),
         "j3": (-60, 0),
         "j4": (-360.0, 360.0),
+    }
+
+    _COORD_LIMITS = {
+        "x": (-260.0, 260.0),
+        "y": (-260.0, 260.0),
+        "z": (-15.0, 357.58),
+        "rx": (-180.0, 180.0),
     }
 
     def __init__(self, mode: str, port: Optional[str], ip: str, udp_port: int, baudrate: int = 115200):
@@ -40,6 +52,10 @@ class MyPalletizerController:
             self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
         print("🛫 Starting in mode:", mode)
+
+    #Todo: die Methode de no uselösche:
+    def test(self):
+        self.mc.send_coords([60,150,50,0],40)
 
     def send_angle(self, id: int, degree: float, speed=40):
         if self.sock:
@@ -87,7 +103,7 @@ class MyPalletizerController:
         if self.mc:
             self.mc.set_color(r, g, b)
 
-    def get_angles(self) -> String:
+    def get_angles(self) -> str:
         if self.mode == "virtual":
             return f"j1: {self._sim_angles[0]:.1f}, j2: {self._sim_angles[1]:.1f}, j3: {self._sim_angles[2]:.1f}, j4: {self._sim_angles[3]:.1f}"
 
@@ -104,6 +120,47 @@ class MyPalletizerController:
                 return f"Real - j1: {angles[0]:.1f}, j2: {angles[1]:.1f}, j3: {angles[2]:.1f}, j4: {angles[3]:.1f} \nSim - j1: {self._sim_angles[0]:.1f}, j2: {self._sim_angles[1]:.1f}, j3: {self._sim_angles[2]:.1f}, j4: {self._sim_angles[3]:.1f}"
             else:
                 raise RobotConnectionError("Not connected to robot.")
+
+    def send_coord(self, coord_id: int, coord: float, speed=40):
+        """
+        id: 1..4 => [x, y, z, rx]
+        """
+        speed = self._clamp_speed(speed)
+
+        coord_id = int(coord_id)
+        if coord_id not in (1, 2, 3, 4):
+            raise ValueError("coord_id must be 1..4 (1=x,2=y,3=z,4=rx)")
+
+        name_by_id = {1: "x", 2: "y", 3: "z", 4: "rx"}
+        name = name_by_id[coord_id]
+        coord = self._clamp_coord(name, coord)
+
+        if self.sock:
+            self._send_udp(build_move_coord_msg(coord_id, coord, speed))
+
+        if self.mc:
+            # pymycobot API: send_coord(id, coord, speed)
+            self.mc.send_coord(coord_id, coord, speed)
+
+    def send_coords(self, coords, speed=40):
+        """
+        coords: [x,y,z,rx]
+        """
+        speed = self._clamp_speed(speed)
+        if coords is None or len(coords) != 4:
+            raise ValueError("coords must be a list [x,y,z,rx] of length 4")
+
+        x = self._clamp_coord("x", coords[0])
+        y = self._clamp_coord("y", coords[1])
+        z = self._clamp_coord("z", coords[2])
+        rx = self._clamp_coord("rx", coords[3])
+
+        if self.sock:
+            self._send_udp(build_move_coords_msg(x, y, z, rx, speed))
+
+        if self.mc:
+            # pymycobot API: send_coords([x,y,z,rx], speed)
+            self.mc.send_coords([x, y, z, rx], speed)
 
     def close(self):
         if self.sock:
@@ -130,6 +187,13 @@ class MyPalletizerController:
         if a < lo: return lo
         if a > hi: return hi
         return a
+
+    def _clamp_coord(self, name: str, value: float) -> float:
+        lo, hi = self._COORD_LIMITS[name]
+        v = float(value)
+        if v < lo: return lo
+        if v > hi: return hi
+        return v
 
     @staticmethod
     def _clamp_speed(speed: int) -> int:

@@ -2,9 +2,6 @@
 from dataclasses import dataclass
 from enum import Enum
 from typing import Optional
-
-from parso.python.tree import String
-
 from .controller import MyPalletizerController
 from .errors import InvalidConfigError
 
@@ -59,6 +56,9 @@ class Robot:
 
     # ---------------- API ----------------
 
+    def test(self):
+        self._impl.test()
+
     def send_angle(self, id: int, degree: float, speed: int = 40):
         self._impl.send_angle(id, degree, speed=speed)
 
@@ -71,8 +71,14 @@ class Robot:
     def set_color(self, r: int, g: int, b: int):
         self._impl.set_color(r, g, b)
 
-    def get_angles(self) -> String:
+    def get_angles(self):
         return self._impl.get_angles()
+
+    def send_coord(self, id: int, coord: float, speed: int = 40):
+        self._impl.send_coord(id, coord, speed=speed)
+
+    def send_coords(self, coords, speed: int = 40):
+        self._impl.send_coords(coords, speed=speed)
 
     def close(self):
         self._impl.close()

@@ -23,6 +23,9 @@ public class UnityUdpBridge : MonoBehaviour
 
     private readonly Queue<RobotCommand> _commandQueue = new();
     private readonly object _lock = new object();
+    
+    [Header("Coord / IK Target (optional)")]
+    public MyPalletizerCoordTarget coordTarget;
 
     [Serializable]
     public class RobotData
@@ -33,6 +36,9 @@ public class UnityUdpBridge : MonoBehaviour
         public float degree;
         public float speed;
         public int r, g, b;
+        public int coord_id;
+        public float coord;
+        public float x, y, z, rx;
     }
 
     private struct RobotCommand
@@ -43,12 +49,16 @@ public class UnityUdpBridge : MonoBehaviour
         public float degree;
         public float speed;
         public int r, g, b;
+        public int coord_id;
+        public float coord;
+        public float x, y, z, rx;
     }
 
     void Start()
     {
         if (adapter == null) adapter = GetComponent<MyPalletizerArticulationAdapter>();
         if (ledController == null) ledController = FindFirstObjectByType<RobotLEDController>();
+        if (coordTarget == null) coordTarget = FindFirstObjectByType<MyPalletizerCoordTarget>();
 
         _receiveThread = new Thread(ReceiveData) { IsBackground = true };
         _receiveThread.Start();
@@ -88,7 +98,14 @@ public class UnityUdpBridge : MonoBehaviour
                         degree = robotData.degree,
                         r = robotData.r,
                         g = robotData.g,
-                        b = robotData.b
+                        b = robotData.b,
+
+                        coord_id = robotData.coord_id,
+                        coord = robotData.coord,
+                        x = robotData.x,
+                        y = robotData.y,
+                        z = robotData.z,
+                        rx = robotData.rx
                     });
                     Debug.Log("Enqueued command: " + robotData.type);
                 }
@@ -131,22 +148,56 @@ public class UnityUdpBridge : MonoBehaviour
             switch (cmd.type)
             {
                 case "led":
-                    if (ledController != null) ledController.SetLEDColor(cmd.r, cmd.g, cmd.b);
-                    else Debug.LogWarning("No RobotLEDController found in scene!");
+                    if (ledController != null)
+                    {
+                        ledController.SetLEDColor(cmd.r, cmd.g, cmd.b);
+                        Debug.Log("LED color set to: R=" + cmd.r + " G=" + cmd.g + " B=" + cmd.b);
+                    }
+                    else
+                    {
+                        Debug.LogWarning("No RobotLEDController found in scene!");
+                    }
                     break;
                 
                 case "move_joint":
                     adapter.MoveJointAsync(cmd.id, cmd.degree, cmd.speed);
+                    Debug.Log("Moving joint " + cmd.id + " to " + cmd.degree + " deg at speed " + cmd.speed);
                     break;
                 
                 case "move_joints":
                     // fire & forget
                     adapter.MoveJointsAsync(cmd.j1, cmd.j2, cmd.j3, cmd.j4, cmd.speed);
+                    Debug.Log("Moving joints to: " + cmd.j1 + ", " + cmd.j2 + ", " + cmd.j3 + ", " + cmd.j4 + " at speed " + cmd.speed);
                     break;
 
                 case "sync_move_joints":
                     // blockiert die Queue bis fertig
                     yield return adapter.MoveJointsSync(cmd.j1, cmd.j2, cmd.j3, cmd.j4, cmd.speed);
+                    Debug.Log("Move joints sync completed for: " + cmd.j1 + ", " + cmd.j2 + ", " + cmd.j3 + ", " + cmd.j4);
+                    break;
+                
+                case "move_coord":
+                    if (coordTarget != null)
+                    {
+                        coordTarget.ApplySingleCoord(cmd.coord_id, cmd.coord, cmd.speed);
+                        Debug.Log("Moving coord_id " + cmd.coord_id + " to " + cmd.coord + " at speed " + cmd.speed);
+                    }
+                    else
+                    {
+                        Debug.LogWarning("No MyPalletizerCoordTarget found in scene!");
+                    }
+                    break;
+
+                case "move_coords":
+                    if (coordTarget != null)
+                    {
+                        coordTarget.ApplyCoords(cmd.x, cmd.y, cmd.z, cmd.rx, cmd.speed);
+                        Debug.Log("Moving coords to: x=" + cmd.x + ", y=" + cmd.y + ", z=" + cmd.z + ", rx=" + cmd.rx + " at speed " + cmd.speed);
+                    }
+                    else
+                    {
+                        Debug.LogWarning("No MyPalletizerCoordTarget found in scene!");
+                    }
                     break;
 
                 default:
