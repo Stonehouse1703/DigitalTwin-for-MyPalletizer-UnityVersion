@@ -6,13 +6,10 @@ from typing import Optional
 from parso.python.tree import String
 from pymycobot import MyPalletizer260
 
-from .protocol import build_led_msg, build_move_msg, sync_build_move_msg
+from .protocol import build_led_msg, build_move_msg, sync_build_move_msg, build_move_angle_msg
 from .errors import RobotConnectionError
 
-
 class MyPalletizerController:
-
-
 
     _JOINT_LIMITS = {
         "j1": (-160.0, 160.0),
@@ -44,7 +41,14 @@ class MyPalletizerController:
 
         print("🛫 Starting in mode:", mode)
 
-    def move_joints(self, j1, j2, j3, j4, speed=40):
+    def send_angle(self, id: int, degree: float, speed=40):
+        if self.sock:
+            self._send_udp(build_move_angle_msg(id, degree, speed))
+
+        if self.mc:
+            self.mc.send_angle(id, degree, speed)
+
+    def send_angles(self, j1, j2, j3, j4, speed=40):
         self._sim_angles = [j1, j2, j3, j4]
         j1 = self._clamp("j1", j1)
         j2 = self._clamp("j2", j2)
@@ -59,7 +63,7 @@ class MyPalletizerController:
             self.mc.send_angles([j1, j2, j3, j4], speed)
 
 
-    def sync_move_joints(self, j1, j2, j3, j4, speed=40):
+    def sync_send_angles(self, j1, j2, j3, j4, speed=40):
         self._sim_angles = [j1, j2, j3, j4]
         j1 = self._clamp("j1", j1)
         j2 = self._clamp("j2", j2)
@@ -100,9 +104,6 @@ class MyPalletizerController:
                 return f"Real - j1: {angles[0]:.1f}, j2: {angles[1]:.1f}, j3: {angles[2]:.1f}, j4: {angles[3]:.1f} \nSim - j1: {self._sim_angles[0]:.1f}, j2: {self._sim_angles[1]:.1f}, j3: {self._sim_angles[2]:.1f}, j4: {self._sim_angles[3]:.1f}"
             else:
                 raise RobotConnectionError("Not connected to robot.")
-
-    def sleep(self, seconds: float):
-        time.sleep(max(0.0, float(seconds)))
 
     def close(self):
         if self.sock:

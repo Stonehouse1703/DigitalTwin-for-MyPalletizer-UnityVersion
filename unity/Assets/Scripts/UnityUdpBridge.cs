@@ -28,7 +28,9 @@ public class UnityUdpBridge : MonoBehaviour
     public class RobotData
     {
         public string type;
+        public int id;
         public float j1, j2, j3, j4;
+        public float degree;
         public float speed;
         public int r, g, b;
     }
@@ -36,7 +38,9 @@ public class UnityUdpBridge : MonoBehaviour
     private struct RobotCommand
     {
         public string type;
+        public int id;
         public float j1, j2, j3, j4;
+        public float degree;
         public float speed;
         public int r, g, b;
     }
@@ -75,11 +79,13 @@ public class UnityUdpBridge : MonoBehaviour
                     _commandQueue.Enqueue(new RobotCommand
                     {
                         type = robotData.type,
+                        id = robotData.id,
                         j1 = robotData.j1,
                         j2 = robotData.j2,
                         j3 = robotData.j3,
                         j4 = robotData.j4,
                         speed = robotData.speed,
+                        degree = robotData.degree,
                         r = robotData.r,
                         g = robotData.g,
                         b = robotData.b
@@ -128,7 +134,11 @@ public class UnityUdpBridge : MonoBehaviour
                     if (ledController != null) ledController.SetLEDColor(cmd.r, cmd.g, cmd.b);
                     else Debug.LogWarning("No RobotLEDController found in scene!");
                     break;
-
+                
+                case "move_joint":
+                    adapter.MoveJointAsync(cmd.id, cmd.degree, cmd.speed);
+                    break;
+                
                 case "move_joints":
                     // fire & forget
                     adapter.MoveJointsAsync(cmd.j1, cmd.j2, cmd.j3, cmd.j4, cmd.speed);

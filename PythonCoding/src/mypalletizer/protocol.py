@@ -1,4 +1,13 @@
-﻿def build_move_msg(j1: float, j2: float, j3: float, j4: float, speed: int) -> dict:
+﻿def build_move_angle_msg(id: int, degree: float, speed: int) -> dict:
+    return {
+        "v": 1,
+        "type": "move_joint",
+        "id": float(id),
+        "degree": float(degree),
+        "speed": float(speed),
+    }
+
+def build_move_msg(j1: float, j2: float, j3: float, j4: float, speed: int) -> dict:
     return {
         "v": 1,
         "type": "move_joints",

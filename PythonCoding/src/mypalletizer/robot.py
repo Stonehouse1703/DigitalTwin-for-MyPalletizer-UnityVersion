@@ -59,20 +59,20 @@ class Robot:
 
     # ---------------- API ----------------
 
-    def move_joints(self, j1: float, j2: float, j3: float, j4: float, speed: int = 40):
-        self._impl.move_joints(j1, j2, j3, j4, speed=speed)
+    def send_angle(self, id: int, degree: float, speed: int = 40):
+        self._impl.send_angle(id, degree, speed=speed)
 
-    def sync_move_joints(self, j1: float, j2: float, j3: float, j4: float, speed: int = 40):
-        self._impl.sync_move_joints(j1, j2, j3, j4, speed=speed)
+    def send_angles(self, j1: float, j2: float, j3: float, j4: float, speed: int = 40):
+        self._impl.send_angles(j1, j2, j3, j4, speed=speed)
+
+    def sync_send_angles(self, j1: float, j2: float, j3: float, j4: float, speed: int = 40):
+        self._impl.sync_send_angles(j1, j2, j3, j4, speed=speed)
 
     def set_color(self, r: int, g: int, b: int):
         self._impl.set_color(r, g, b)
 
     def get_angles(self) -> String:
         return self._impl.get_angles()
-
-    def sleep(self, seconds: float):
-        self._impl.sleep(seconds)
 
     def close(self):
         self._impl.close()

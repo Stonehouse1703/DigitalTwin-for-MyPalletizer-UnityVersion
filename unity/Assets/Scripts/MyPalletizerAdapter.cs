@@ -8,6 +8,28 @@ public class MyPalletizerArticulationAdapter : MonoBehaviour
     public ArticulationJointActuator j3;
     public ArticulationJointActuator j4;
 
+    public void MoveJointAsync(int id, float degree, float speed)
+    {
+        switch (id)
+        {
+            case 1:
+                j1.MoveToAsync(degree, speed);
+                break;
+            case 2:
+                j2.MoveToAsync(degree, speed);
+                break;
+            case 3:
+                j3.MoveToAsync(degree, speed);
+                break;
+            case 4:
+                j4.MoveToAsync(degree, speed);
+                break;
+            default:
+                Debug.LogWarning($"Ungültige Gelenk-ID: {id}");
+                break;
+        }
+    }
+    
     public void MoveJointsAsync(float a1, float a2, float a3, float a4, float speed)
     {
         j1.MoveToAsync(a1, speed);

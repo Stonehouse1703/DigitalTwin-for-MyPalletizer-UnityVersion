@@ -1,7 +1,6 @@
-﻿import mypalletizer
+﻿import time
 
 from src.mypalletizer import Robot, RobotMode
-
 
 def main():
     # 1) Nur Simulation
@@ -12,13 +11,17 @@ def main():
 
     # 3) Beides
     with Robot(mode=RobotMode.BOTH, port="COM7") as robot:
+
+        robot.send_angle(1, 90, speed=40)
+        time.sleep(3)
+
         robot.set_color(0, 255, 0)
-        robot.move_joints(0, 0, 0, 0, speed=40)
-        robot.sleep(3)
+        robot.send_angles(0, 0, 0, 0, speed=40)
+        time.sleep(3)
 
         robot.set_color(0, 0, 255)
-        robot.move_joints(74, 85, 0, 0, speed=40)
-        robot.sleep(5)
+        robot.send_angles(74, 85, 0, 0, speed=40)
+        time.sleep(5)
         print(robot.get_angles())
 
         '''
@@ -34,11 +37,11 @@ def main():
         robot.sleep(5)
         '''
 
-        robot.sync_move_joints(-160, 0, 0, 180, speed=100)
+        robot.sync_send_angles(-160, 0, 0, 180, speed=100)
         print(robot.get_angles())
 
 
-        robot.sync_move_joints(0, 0, 0, 0, speed=120)
+        robot.sync_send_angles(0, 0, 0, 0, speed=120)
         print(robot.get_angles())
 
 
