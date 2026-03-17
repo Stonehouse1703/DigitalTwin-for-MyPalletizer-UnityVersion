@@ -31,6 +31,35 @@ def build_led_msg(r: int, g: int, b: int) -> dict:
         "b": int(b),
     }
 
+def build_set_end_effector_msg(tool: str) -> dict:
+    return {
+        "v": 1,
+        "type": "set_end_effector",
+        "tool": str(tool),
+    }
+
+
+def build_set_gripper_state_msg(flag: int, speed: int, type_1: int = 1) -> dict:
+    return {
+        "v": 1,
+        "type": "set_gripper_state",
+        "flag": int(flag),
+        "speed": int(speed),
+        "type_1": int(type_1),
+    }
+
+
+def build_pump_msg(enabled: bool) -> dict:
+    return {
+        "v": 1,
+        "type": "pump",
+        "enabled": bool(enabled),
+    }
+
+
+
+# ---------------< Obejct spawn for the world >---------------
+
 
 def build_spawn_msg(
     object_type: str,
@@ -81,3 +110,4 @@ def build_clear_msg() -> dict:
         "v": 1,
         "type": "clear",
     }
+

@@ -17,6 +17,9 @@ public class UnityUdpBridge : MonoBehaviour
     [Header("Robot Reference")]
     public MyPalletizerArticulationAdapter adapter;
 
+	[Header("Tool Manager")]
+	public RobotToolManager toolManager;
+
     private UdpClient _udpClient;
     private Thread _receiveThread;
     private volatile bool _running = true;
@@ -25,26 +28,37 @@ public class UnityUdpBridge : MonoBehaviour
     private readonly object _lock = new object();
 
     [Serializable]
-    public class RobotData
-    {
-        public string type;
-        public float j1, j2, j3, j4;
-        public float speed;
-        public int r, g, b;
-    }
+	public class RobotData
+	{
+    	public string type;
+    	public float j1, j2, j3, j4;
+    	public int speed;
+    	public int r, g, b;
+
+    	public string tool;
+    	public int flag;
+    	public int type_1;
+    	public bool enabled;
+	}
 
     private struct RobotCommand
-    {
-        public string type;
-        public float j1, j2, j3, j4;
-        public float speed;
-        public int r, g, b;
-    }
+	{
+    	public string type;
+    	public float j1, j2, j3, j4;
+    	public int speed;
+    	public int r, g, b;
+
+    	public string tool;
+    	public int flag;
+    	public int type_1;
+    	public bool enabled;
+	}
 
     void Start()
     {
         if (adapter == null) adapter = GetComponent<MyPalletizerArticulationAdapter>();
         if (ledController == null) ledController = FindFirstObjectByType<RobotLEDController>();
+		if (toolManager == null) toolManager = FindFirstObjectByType<RobotToolManager>();
 
         _receiveThread = new Thread(ReceiveData) { IsBackground = true };
         _receiveThread.Start();
@@ -73,7 +87,7 @@ public class UnityUdpBridge : MonoBehaviour
                 lock (_lock)
                 {
                     _commandQueue.Enqueue(new RobotCommand
-                    {
+					{
                         type = robotData.type,
                         j1 = robotData.j1,
                         j2 = robotData.j2,
@@ -82,7 +96,11 @@ public class UnityUdpBridge : MonoBehaviour
                         speed = robotData.speed,
                         r = robotData.r,
                         g = robotData.g,
-                        b = robotData.b
+                        b = robotData.b,
+                        tool = robotData.tool,
+                        flag = robotData.flag,
+                        type_1 = robotData.type_1,
+                        enabled = robotData.enabled
                     });
                     Debug.Log("Enqueued command: " + robotData.type);
                 }
@@ -137,6 +155,27 @@ public class UnityUdpBridge : MonoBehaviour
                 case "sync_move_joints":
                     // blockiert die Queue bis fertig
                     yield return adapter.MoveJointsSync(cmd.j1, cmd.j2, cmd.j3, cmd.j4, cmd.speed);
+                    break;
+				
+				case "set_end_effector":
+                    if (toolManager != null)
+                        toolManager.SetTool(cmd.tool);
+                    else
+                        Debug.LogWarning("No RobotToolManager found!");
+                    break;
+                
+                case "set_gripper_state":
+                    if (toolManager != null)
+                        toolManager.SetGripperState(cmd.flag, cmd.speed, cmd.type_1);
+                    else
+                        Debug.LogWarning("No RobotToolManager found!");
+                    break;
+                
+                case "pump":
+                    if (toolManager != null)
+                        toolManager.SetPump(cmd.enabled);
+                    else
+                        Debug.LogWarning("No RobotToolManager found!");
                     break;
 
                 default:

@@ -1,11 +1,14 @@
 ﻿from mypalletizer import Robot, RobotMode, World, Box, Cylinder
+from mypalletizer.robot import EndEffector
 
 
 def main():
     with Robot(mode=RobotMode.VIRTUAL, ip="127.0.0.1", udp_port=5005) as robot:
         with World(ip="127.0.0.1", udp_port=5006) as world:
-            world.clear()
 
+            robot.set_end_effector(EndEffector.GRIPPER)
+
+            world.clear()
             world.load_preset("three_blocks")
 
             """

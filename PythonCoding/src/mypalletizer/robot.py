@@ -13,6 +13,10 @@ class RobotMode(str, Enum):
     REAL = "real"
     BOTH = "both"
 
+class EndEffector(str, Enum):
+    PUMP = "pump"
+    GRIPPER = "gripper"
+
 
 @dataclass(frozen=True)
 class RobotConfig:
@@ -72,6 +76,18 @@ class Robot:
 
     def close(self):
         self._impl.close()
+
+    def set_end_effector(self, tool: str):
+        self._impl.set_end_effector(tool)
+
+    def set_gripper_state(self, flag: int, speed: int, _type_1: int = 1):
+        self._impl.set_gripper_state(flag, speed, _type_1)
+
+    def pump_on(self):
+        self._impl.pump_on()
+
+    def pump_off(self):
+        self._impl.pump_off()
 
     def __enter__(self) -> "Robot":
         return self

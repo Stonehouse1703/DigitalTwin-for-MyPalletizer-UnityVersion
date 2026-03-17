@@ -2,10 +2,18 @@
 import socket
 import time
 from typing import Optional
-
+from enum import Enum
 from pymycobot import MyPalletizer260
 
-from .protocol import build_led_msg, build_move_msg, sync_build_move_msg
+from .protocol import (
+    build_led_msg,
+    build_move_msg,
+    sync_build_move_msg,
+    build_set_end_effector_msg,
+    build_set_gripper_state_msg,
+    build_pump_msg,
+)
+
 from .errors import RobotConnectionError
 
 
@@ -161,6 +169,48 @@ class MyPalletizerController:
         if a > hi:
             return hi
         return a
+
+    def set_end_effector(self, tool):
+        if isinstance(tool, Enum):
+            tool = tool.value
+
+        tool = str(tool).strip().lower()
+
+        if tool not in ("gripper", "pump"):
+            raise ValueError("tool must be 'gripper' or 'pump'.")
+
+        if self.sock:
+            self._send_udp(build_set_end_effector_msg(tool))
+
+    def set_gripper_state(self, flag: int, speed: int, _type_1: int = 1):
+        flag = int(flag)
+        speed = self._clamp_speed(speed)
+        _type_1 = int(_type_1)
+
+        if flag not in (0, 1, 254):
+            raise ValueError("flag must be 0 (open), 1 (close), or 254 (release).")
+
+        if self.sock:
+            self._send_udp(build_set_gripper_state_msg(flag, speed, _type_1))
+
+        if self.mc:
+            self.mc.set_gripper_state(flag, speed, _type_1)
+
+    def pump_on(self):
+        if self.sock:
+            self._send_udp(build_pump_msg(True))
+
+        if self.mc:
+            self.mc.set_basic_output(2, 0)
+            self.mc.set_basic_output(5, 0)
+
+    def pump_off(self):
+        if self.sock:
+            self._send_udp(build_pump_msg(False))
+
+        if self.mc:
+            self.mc.set_basic_output(2, 1)
+            self.mc.set_basic_output(5, 1)
 
     @staticmethod
     def _clamp_speed(speed: int) -> int:
