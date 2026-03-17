@@ -6,7 +6,7 @@ def main():
     with Robot(mode=RobotMode.VIRTUAL, ip="127.0.0.1", udp_port=5005) as robot:
         with World(ip="127.0.0.1", udp_port=5006) as world:
 
-            robot.set_end_effector(EndEffector.GRIPPER)
+            robot.set_end_effector(EndEffector.PUMP)
 
             world.clear()
             world.load_preset("three_blocks")
@@ -31,20 +31,22 @@ def main():
             )"""
 
             robot.set_color(0, 255, 0)
-            robot.send_angles(0, 0, 0, 0, 40)
+            #robot.send_angles(0, 0, 0, 0, 40)
             robot.sleep(3)
 
             robot.set_color(0, 0, 255)
-            robot.send_angles(74, 85, 0, 0, 40)
-            robot.sleep(5)
+            robot.send_angles(-90, 35, 0, 0, 40)
+            robot.sleep(3)
+            robot.pump_on()
 
-            print(robot.get_angles())
+            robot.sleep(1)
+            robot.send_angles(0, 0, 0, 0, 40)
+            robot.sleep(3)
+            robot.pump_off()
+            robot.sleep(1)
+            robot.send_angles(90, 35, 0, 0, 40)
 
-            robot.sync_move_joints(-160, 0, 0, 180, 100)
-            print(robot.get_angles())
 
-            robot.sync_move_joints(0, 0, 0, 0, 100)
-            print(robot.get_angles())
 
 
 if __name__ == "__main__":

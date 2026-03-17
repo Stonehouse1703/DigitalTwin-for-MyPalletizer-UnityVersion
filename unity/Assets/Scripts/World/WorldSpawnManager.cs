@@ -79,6 +79,17 @@ public class WorldSpawnManager : MonoBehaviour
             Quaternion.Euler(rotationEuler),
             spawnedObjectsParent
         );
+        
+        if (go.GetComponent<Rigidbody>() == null)
+        {
+            Rigidbody rb = go.AddComponent<Rigidbody>();
+            rb.mass = 0.05f;
+        }
+
+        if (go.GetComponent<GrabbableObject>() == null)
+        {
+            go.AddComponent<GrabbableObject>();
+        }
 
         go.name = msg.name;
         go.transform.localScale = scale;

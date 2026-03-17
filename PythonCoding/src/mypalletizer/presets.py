@@ -7,7 +7,7 @@ PRESETS = {
         Box(
             name="box_red",
             position=(-2, 0.5, 0),
-            scale=(1, 1, 1),
+            scale=(0.5, 0.5, 0.5),
             color=(255, 0, 0),
         ),
         Box(
