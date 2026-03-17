@@ -12,14 +12,14 @@ PRESETS = {
         ),
         Box(
             name="box_green",
-            position=(0.28, 0.05, 0.10),
-            scale=(0.05, 0.05, 0.05),
+            position=(2, 0.5, 0),
+            scale=(0.5, 0.5, 0.5),
             color=(0, 255, 0),
         ),
         Box(
             name="box_blue",
-            position=(0.36, 0.05, 0.10),
-            scale=(0.05, 0.05, 0.05),
+            position=(3, 0.5, 0),
+            scale=(0.5, 0.5, 0.5),
             color=(0, 0, 255),
         ),
     ],

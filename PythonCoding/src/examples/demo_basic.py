@@ -32,19 +32,40 @@ def main():
 
             robot.set_color(0, 255, 0)
             #robot.send_angles(0, 0, 0, 0, 40)
-            robot.sleep(3)
-
-            robot.set_color(0, 0, 255)
-            robot.send_angles(-90, 35, 0, 0, 40)
-            robot.sleep(3)
+            robot.sync_move_joints(-90, 30, 0, 0, 50)
+            robot.sync_move_joints(-90, 35, 0, 0, 20)
+            robot.sleep(4)
             robot.pump_on()
-
             robot.sleep(1)
-            robot.send_angles(0, 0, 0, 0, 40)
-            robot.sleep(3)
+            robot.sync_move_joints(0, 35, 0, 0, 40)
+            robot.sleep(2)
             robot.pump_off()
             robot.sleep(1)
-            robot.send_angles(90, 35, 0, 0, 40)
+
+            robot.sync_move_joints(90, 30, 0, 0, 50)
+            robot.sync_move_joints(90, 35, 0, 0, 20)
+            robot.sleep(4)
+            robot.pump_on()
+            robot.sleep(1)
+            robot.sync_move_joints(0, 25, 0, 0, 40)
+            robot.sleep(2)
+            robot.pump_off()
+            robot.sleep(1)
+
+            robot.sync_move_joints(0, 0, 0, 0, 50)
+            robot.sync_move_joints(90, 62, -90, 0, 50)
+            robot.sync_move_joints(90, 69, -90, 0, 20)
+            robot.sleep(4)
+            robot.pump_on()
+            robot.sleep(2)
+            robot.sync_move_joints(0, 25, 0, 0, 40)
+            robot.sleep(5)
+            robot.pump_off()
+            robot.sleep(2)
+
+            robot.sync_move_joints(90, 50, 0, 0, 50)
+            robot.sync_move_joints(-90, 50, 0, 0, 50)
+
 
 
 
