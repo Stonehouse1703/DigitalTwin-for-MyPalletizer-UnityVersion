@@ -6,8 +6,9 @@
         "j2": float(j2),
         "j3": float(j3),
         "j4": float(j4),
-        "speed": float(speed),
+        "speed": int(speed),
     }
+
 
 def sync_build_move_msg(j1: float, j2: float, j3: float, j4: float, speed: int) -> dict:
     return {
@@ -17,8 +18,9 @@ def sync_build_move_msg(j1: float, j2: float, j3: float, j4: float, speed: int) 
         "j2": float(j2),
         "j3": float(j3),
         "j4": float(j4),
-        "speed": float(speed),
+        "speed": int(speed),
     }
+
 
 def build_led_msg(r: int, g: int, b: int) -> dict:
     return {
@@ -27,4 +29,55 @@ def build_led_msg(r: int, g: int, b: int) -> dict:
         "r": int(r),
         "g": int(g),
         "b": int(b),
+    }
+
+
+def build_spawn_msg(
+    object_type: str,
+    name: str,
+    position: tuple[float, float, float],
+    rotation: tuple[float, float, float],
+    scale: tuple[float, float, float],
+    color: tuple[int, int, int],
+) -> dict:
+    return {
+        "v": 1,
+        "type": "spawn",
+        "object_type": object_type,
+        "name": name,
+        "position": {
+            "x": float(position[0]),
+            "y": float(position[1]),
+            "z": float(position[2]),
+        },
+        "rotation": {
+            "x": float(rotation[0]),
+            "y": float(rotation[1]),
+            "z": float(rotation[2]),
+        },
+        "scale": {
+            "x": float(scale[0]),
+            "y": float(scale[1]),
+            "z": float(scale[2]),
+        },
+        "color": {
+            "r": int(color[0]),
+            "g": int(color[1]),
+            "b": int(color[2]),
+        },
+    }
+
+
+def build_delete_msg(name: str) -> dict:
+    return {
+        "v": 1,
+        "type": "delete",
+        "name": name,
+    }
+
+
+def build_clear_msg() -> dict:
+    return {
+        "v": 1,
+        "type": "clear",
     }

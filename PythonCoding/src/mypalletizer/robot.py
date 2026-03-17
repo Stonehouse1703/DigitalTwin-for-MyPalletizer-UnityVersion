@@ -1,9 +1,8 @@
 ﻿from __future__ import annotations
+
 from dataclasses import dataclass
 from enum import Enum
 from typing import Optional
-
-from parso.python.tree import String
 
 from .controller import MyPalletizerController
 from .errors import InvalidConfigError
@@ -25,10 +24,6 @@ class RobotConfig:
 
 
 class Robot:
-    """
-    Student-facing API.
-    """
-
     def __init__(
         self,
         *,
@@ -57,8 +52,6 @@ class Robot:
             baudrate=config.baudrate,
         )
 
-    # ---------------- API ----------------
-
     def send_angles(self, j1: float, j2: float, j3: float, j4: float, speed: int = 40):
         self._impl.send_angles(j1, j2, j3, j4, speed=speed)
 
@@ -71,7 +64,7 @@ class Robot:
     def set_color(self, r: int, g: int, b: int):
         self._impl.set_color(r, g, b)
 
-    def get_angles(self) -> String:
+    def get_angles(self) -> str:
         return self._impl.get_angles()
 
     def sleep(self, seconds: float):
@@ -80,7 +73,6 @@ class Robot:
     def close(self):
         self._impl.close()
 
-    # Context manager support
     def __enter__(self) -> "Robot":
         return self
 
@@ -88,13 +80,11 @@ class Robot:
         self.close()
         return False
 
-    # ---------------- Validation ----------------
-
     @staticmethod
     def _validate(cfg: RobotConfig):
         if cfg.mode in (RobotMode.REAL, RobotMode.BOTH) and not cfg.port:
             raise InvalidConfigError(
-                "Mode REAL or BOTH requires a serial port (e.g. port='COM7')."
+                "Mode REAL or BOTH requires a serial port (e.g. port='COM7' or '/dev/ttyUSB0')."
             )
 
         if not (1 <= cfg.udp_port <= 65535):
