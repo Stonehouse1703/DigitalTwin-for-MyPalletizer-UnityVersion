@@ -11,7 +11,7 @@ def main():
     # robot = Robot.connect(port="COM7")
 
     # 3) Beides
-    with Robot(mode=RobotMode.BOTH, port="COM7") as robot:
+    with Robot(mode=RobotMode.VIRTUAL, port="COM7") as robot:
         robot.set_color(0, 255, 0)
         robot.send_angles(0, 0, 0, 0, 40)
         robot.sleep(3)
