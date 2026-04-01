@@ -35,6 +35,7 @@ public class WorldUdpBridge : MonoBehaviour
             return;
         }
 
+        _running = true;
         _receiveThread = new Thread(ReceiveData) { IsBackground = true };
         _receiveThread.Start();
 
@@ -92,7 +93,17 @@ public class WorldUdpBridge : MonoBehaviour
                 }
                 catch (SocketException)
                 {
-                    // normal beim Shutdown
+                    if (!_running)
+                        break; // normal beim Shutdown
+
+                    Debug.LogWarning("World UDP socket error while receiving.");
+                }
+                catch (ObjectDisposedException)
+                {
+                    if (!_running)
+                        break; // normal beim Shutdown
+
+                    Debug.LogWarning("World UDP socket disposed while receiving.");
                 }
                 catch (Exception e)
                 {
@@ -100,16 +111,43 @@ public class WorldUdpBridge : MonoBehaviour
                 }
             }
         }
+        catch (ThreadAbortException)
+        {
+            Debug.Log("WorldUdpBridge thread aborted.");
+        }
         catch (Exception e)
         {
-            Debug.LogError("WorldUdpBridge startup failed: " + e.Message);
+            Debug.LogError("WorldUdpBridge failed to start: " + e.Message);
         }
     }
 
     private void OnApplicationQuit()
     {
+        ShutdownReceiver();
+    }
+
+    private void OnDestroy()
+    {
+        ShutdownReceiver();
+    }
+
+    private void ShutdownReceiver()
+    {
         _running = false;
-        _udpClient?.Close();
-        _receiveThread?.Join(200);
+
+        try
+        {
+            _udpClient?.Close();
+        }
+        catch { }
+
+        try
+        {
+            if (_receiveThread != null && _receiveThread.IsAlive)
+            {
+                _receiveThread.Join(200);
+            }
+        }
+        catch { }
     }
 }

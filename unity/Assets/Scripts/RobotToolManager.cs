@@ -7,7 +7,7 @@ public class RobotToolManager : MonoBehaviour
     public GameObject pumpTool;
 
     [Header("Optional Logic Components")]
-    public AdaptiveGripperController gripperController;
+    public SimpleGripperController gripperController;
     public SuctionPumpController pumpController;
 
     public string CurrentTool { get; private set; } = "gripper";
@@ -48,7 +48,7 @@ public class RobotToolManager : MonoBehaviour
 
         if (gripperController == null)
         {
-            Debug.LogWarning("No AdaptiveGripperController assigned.");
+            Debug.LogWarning("No SimpleGripperController assigned.");
             return;
         }
 

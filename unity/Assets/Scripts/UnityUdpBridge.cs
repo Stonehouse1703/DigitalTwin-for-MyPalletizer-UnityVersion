@@ -165,6 +165,7 @@ public class UnityUdpBridge : MonoBehaviour
                     break;
                 
                 case "set_gripper_state":
+                    toolManager.SetGripperState(cmd.flag, cmd.speed, cmd.type_1);
                     if (toolManager != null)
                         toolManager.SetGripperState(cmd.flag, cmd.speed, cmd.type_1);
                     else
