@@ -1,4 +1,6 @@
-# 🤖 MyPalletizer 650 M5 – Simulation Environment
+# 🦾 MyPalletizer 260 M5 – Simulation Environment
+
+![MyPalletizer 260 M5](https://docs.elephantrobotics.com/docs/mypalletizer-m5-en/resourse/2-serialproduct/myP.png)
 
 ## Overview
 
