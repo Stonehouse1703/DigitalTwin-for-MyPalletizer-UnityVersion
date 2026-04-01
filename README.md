@@ -62,6 +62,8 @@ robot.set_gripper_state(0, 50)  # open
 
 ## Documentation
 
-Detailed setup and architecture will be added in the **Wiki**.
+Detailed setup, usage, and architecture are documented in the Wiki:
+
+👉 [Wiki](https://github.com/Stonehouse1703/DigitalTwin-for-MyPalletizer-UnityVersion/wiki)
 
 
