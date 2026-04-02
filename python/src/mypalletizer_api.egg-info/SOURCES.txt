@@ -13,3 +13,6 @@ src/mypalletizer_api.egg-info/SOURCES.txt
 src/mypalletizer_api.egg-info/dependency_links.txt
 src/mypalletizer_api.egg-info/requires.txt
 src/mypalletizer_api.egg-info/top_level.txt
+tests/test_protocol.py
+tests/test_robot.py
+tests/test_world.py

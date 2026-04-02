@@ -1,2 +1,6 @@
 numpy
 pymycobot
+
+[test]
+pytest
+pytest-mock

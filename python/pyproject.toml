@@ -8,19 +8,13 @@ version = "0.1.0"
 description = "API for MyPalletizer 260 M5 (real, virtual, or both)."
 readme = "README.md"
 authors = [
-    {name = "Stonehouse1703"}
+    { name = "Stonehouse1703" }
 ]
-license = {text = "MIT"}
+license = { text = "MIT" }
 requires-python = ">=3.10"
 dependencies = [
     "numpy",
     "pymycobot",
-]
-
-[project.optional-dependencies]
-test = [
-    "pytest",
-    "pytest-mock",
 ]
 keywords = ["robotics", "simulation", "mypalletizer", "digital-twin"]
 classifiers = [
@@ -29,8 +23,14 @@ classifiers = [
     "Operating System :: OS Independent",
 ]
 
+[project.optional-dependencies]
+test = [
+    "pytest",
+    "pytest-mock",
+]
+
 [tool.setuptools]
-package-dir = {"" = "src"}
+package-dir = { "" = "src" }
 
 [tool.setuptools.packages.find]
 where = ["src"]
