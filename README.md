@@ -4,7 +4,7 @@
 
 ## Overview
 
-This project provides a **simple simulation environment in Unity** for the **MyPalletizer 650 M5** robot.
+This project provides a **simple simulation environment in Unity** for the **MyPalletizer 260 M5** robot.
 
 The same control logic can be used to:
 
