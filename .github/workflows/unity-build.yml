@@ -20,7 +20,7 @@ jobs:
           UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
           UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
         with:
-          projectPath: unity/MyPalletizerSimulation
+          projectPath: unity
           targetPlatform: StandaloneWindows64
 
       - name: Upload Unity Build
