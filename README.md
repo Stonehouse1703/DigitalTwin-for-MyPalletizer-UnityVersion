@@ -1,4 +1,7 @@
 # 🦾 MyPalletizer 260 M5 – Simulation Environment
+![Python CI](https://img.shields.io/github/actions/workflow/status/Stonehouse1703/DigitalTwin-for-MyPalletizer-260-M5-UnityVersion/python-package.yml?branch=main&label=Python%20CI)
+![Unity Build](https://img.shields.io/github/actions/workflow/status/Stonehouse1703/DigitalTwin-for-MyPalletizer-260-M5-UnityVersion/unity-build.yml?branch=main&label=Unity%20Build)
+
 
 ![MyPalletizer 260 M5](https://docs.elephantrobotics.com/docs/mypalletizer-m5-en/resourse/2-serialproduct/myP.png)
 
