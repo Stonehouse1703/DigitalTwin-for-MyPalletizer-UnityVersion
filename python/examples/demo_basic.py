@@ -1,4 +1,10 @@
-﻿from mypalletizer import Robot, RobotMode, World, Box, Cylinder
+﻿import sys
+import os
+
+# Add src to path for local execution without installation
+sys.path.append(os.path.join(os.path.dirname(__file__), "..", "src"))
+
+from mypalletizer import Robot, RobotMode, World, Box, Cylinder
 from mypalletizer.robot import EndEffector
 
 
@@ -6,7 +12,7 @@ def main():
     with Robot(mode=RobotMode.VIRTUAL, ip="127.0.0.1", udp_port=5005) as robot:
         with World(ip="127.0.0.1", udp_port=5006) as world:
 
-            robot.set_end_effector(EndEffector.GRIPPER)
+            robot.set_end_effector(EndEffector.PUMP)
 
             world.clear()
             world.load_preset("three_blocks")
