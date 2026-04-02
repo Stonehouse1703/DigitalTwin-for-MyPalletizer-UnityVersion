@@ -1,6 +1,8 @@
 name: Unity Build
 
 on:
+  push:
+    branches: [ main ]
   workflow_dispatch:
 
 jobs:
@@ -13,6 +15,7 @@ jobs:
         targetPlatform:
           - StandaloneWindows64
           - StandaloneLinux64
+          - StandaloneOSX
 
     steps:
       - name: Checkout
