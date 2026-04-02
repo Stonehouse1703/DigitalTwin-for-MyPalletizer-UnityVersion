@@ -16,6 +16,12 @@ dependencies = [
     "numpy",
     "pymycobot",
 ]
+
+[project.optional-dependencies]
+test = [
+    "pytest",
+    "pytest-mock",
+]
 keywords = ["robotics", "simulation", "mypalletizer", "digital-twin"]
 classifiers = [
     "Programming Language :: Python :: 3",

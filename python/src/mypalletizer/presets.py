@@ -22,6 +22,12 @@ PRESETS = {
             scale=(0.5, 0.5, 0.5),
             color=(0, 0, 255),
         ),
+        Cylinder(
+            name="cylinder_L1",
+            position=(-2, 0, 0),
+            scale=(0.5, 0.1, 0.5),
+            color=(120, 120, 120),
+        ),
     ],
     "pick_and_place_basic": [
         Box(
