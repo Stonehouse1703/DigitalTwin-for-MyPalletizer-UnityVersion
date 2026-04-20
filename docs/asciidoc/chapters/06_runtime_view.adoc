@@ -1,0 +1,20 @@
+ifndef::imagesdir[:imagesdir: ../images]
+
+[[section-runtime-view]]
+== Runtime View
+
+
+=== Erfassung einer Bestellung
+Dieses Sequenzdiagramm zeigt den Ablauf bei der Erfassung einer Bestellung. Der Order-Service nimmt die Bestellung entgegen und steuert den weiteren Ablauf über Events. Bei Kunden mit offenen Mahnungen wird die Bestellung blockiert. Falls der Lagerbestand nicht ausreicht, wird eine Nachbestellung ausgelöst und die Bestellung wartet auf Nachschub.
+
+image::runtime-bestellung-erfassen.png[]
+
+=== Nachbestellung
+Wenn ein Artikel nicht in ausreichender Menge verfügbar ist, wird die betroffene Bestellposition zusammen mit der noch fehlenden Menge als offene Pending-Position gespeichert. Nach einem Wareneingang werden diese Pending-Positionen in FIFO-Reihenfolge verarbeitet. Sobald eine Position vollständig bedient werden kann, wird der entsprechende Status per Event an den Order-Service zurückgemeldet.
+
+image::runtime-nachbestellung.png[]
+
+=== Änderung einer Bestellung (Position anpassen / entfernen)
+Dieses Sequenzdiagramm zeigt, wie eine bestehende Bestellung angepasst wird. Je nach Änderung wird im Inventory-Service zusätzlicher Bestand abgebucht oder bereits reservierter Bestand wieder freigegeben. Bei Fehlern wird die Bestellung auf manuelle Prüfung gesetzt.
+
+image::runtime-bestellung-aendern.png[]

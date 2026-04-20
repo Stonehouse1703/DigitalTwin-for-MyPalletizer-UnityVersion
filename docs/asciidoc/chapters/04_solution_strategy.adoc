@@ -1,0 +1,99 @@
+ifndef::imagesdir[:imagesdir: ../images]
+
+[[section-solution-strategy]]
+== Solution Strategy
+
+Das Filialbestellsystem (FBS) basiert auf einer Microservice-Architektur, um die fachlichen
+Domänen wie Bestellung, Lager, Kunde und Benutzerverwaltung sauber zu trennen. Dadurch
+können Services unabhängig entwickelt, getestet und deployed werden, was Flexibilität und
+Wartbarkeit deutlich erhöht.
+
+Die Services kommunizieren nach aussen über ein zentrales API-Gateway (REST) und intern
+über RabbitMQ-Events. Dieser Mix aus synchroner und asynchroner Kommunikation sorgt für
+eine lose Kopplung, höhere Ausfallsicherheit und klare Verantwortlichkeiten. Jeder Service
+verwaltet seine eigene Datenbank (Database-per-Service), was technologische Unabhängigkeit
+und Skalierbarkeit unterstützt.
+
+=== Service-Zuschnitt
+
+Das System ist in mehrere Microservices mit klar abgegrenzten bounded contexts aufgeteilt:
+
+
+|===
+| Service | Beschreibung
+
+| Gateway-Service
+| Einheitlicher Einstiegspunkt für alle Clients. Stellt eine REST-API bereit und kapselt die interne RabbitMQ-Kommunikation.
+
+| Order-Service
+| Verantwortlich für Lebenszyklus und Statusmaschine von Kundenbestellungen.
+
+| Inventory-Service
+| Verwaltet Artikelbestände und automatische Nachbestellungen.
+
+| Customer-Service
+| Verwaltet Kundenstammdaten
+
+| User-Service
+| Zuständig für Benutzerverwaltung, Authentifizierung und Rollen.
+
+| Monitoring-Service
+| Nimmt LogEvents entgegen und leitet sie an Loki zur zentralen Auswertung weiter.
+|===
+
+Jeder Service besitzt sein eigenes Datenmodell und seine eigene Datenbank („database per service“)
+auf Basis von JPA/Hibernate und MySQL. Dadurch bleiben die Services lose gekoppelt und können
+unabhängig entwickelt und deployed werden.
+
+Eine detaillierte Beschreibung der einzelnen Services inkl. Schnittstellen findet sich in <<section-micro-services,Micro-Services>>.
+
+=== Technologische Basis
+
+* **Programmiersprache**: Java Version 21.0.8 LTS
+* **Frameworks**: Micronaut, JPA/Hibernate, Micronaut Security (JWT), Argon2 Passwort-Hashing
+* **Kommunikation**: REST (Gateway), RabbitMQ (Events zwischen Services)
+* **Persistenz**: MySQL pro Service (Database-per-Service), automatische Schemaerstellung
+* **Logging/Monitoring**: strukturierte LogEvents → Monitoring-Service → Grafana Loki
+* **Containerisierung**: Docker, docker-compose, GitLab CI/CD
+* **Tests**: JUnit 5, Micronaut Test, H2-Integrationstests
+// TODO: Tests noeinisch überprüefe
+
+
+=== Client-Zugriff
+Für das System wurde kein eigener GUI-Client implementiert. Der Zugriff erfolgt ausschliesslich über die REST-API. Zur einfachen Ansicht und zum manuellen Testen der Endpunkte steht eine Swagger UI zur Verfügung.
+
+Die Swagger UI ist unter folgendem Link erreichbar (nur im HSLU-Netzwerk): https://gw.swarm-008.swda.labservices.ch/swagger-ui[Link]
+
+=== Kommunikationsstrategie
+
+* *Synchron*: Externe Clients kommunizieren ausschliesslich über das API-Gateway mittels REST-API.
+* *Asynchron*: Die fachlichen Microservices kommunizieren untereinander über RabbitMQ-Nachrichten
+(Commands und Events). Das entkoppelt die Services und erhöht Robustheit und Skalierbarkeit.
+
+Zentrale Geschäftsprozesse (z. B. Bestellerfassung, Lagerdisposition) werden
+durch explizite Statusautomaten (Order-, Positions- und Customer-State) und Events zwischen den
+Services gesteuert.
+
+=== Querschnittskonzepte
+
+* *Security & Users*: Benutzer und Rollen werden im User-Service verwaltet, Passwörter mittels
+Argon2 gehasht und über JWT (Micronaut Security) am Gateway geprüft.
+* *Monitoring & Logging*: Alle Services senden strukturierte LogEvents an einen Monitoring-Service,
+der diese an Grafana Loki weiterleitet, um fachliche Vorgänge und Fehler zentral auswerten zu können.
+* *CI/CD & Tests*: Alle Services werden containerisiert (Docker) betrieben und via GitLab CI/CD
+gebaut, getestet und deployt. Unit- und Integrationstests stellen die fachliche Korrektheit der
+Kernprozesse sicher.
+
+=== Umgang mit Event-Wiederholungen
+
+Da Nachrichten im System mehrfach zugestellt werden können (z. B. durch Wiederholungsversuche von RabbitMQ), wurde bei der Implementierung darauf geachtet, dass alle Event-Handler idempotent ausgeführt werden.
+
+Das bedeutet, dass ein Event mehrfach empfangen werden kann, ohne dass sich der fachliche Systemzustand dadurch mehrfach verändert. Dies wird durch folgende Massnahmen sichergestellt:
+
+* **Eindeutige Message-IDs**: Jedes Event enthält eine eindeutige Message-ID, anhand derer bereits verarbeitete Nachrichten erkannt und bei erneutem Empfang ignoriert werden. (z.B: beim Inventory Service für debit- und revert-Order)
+
+* **Statusprüfungen**: Vor der Verarbeitung eines Events wird der aktuelle Zustand der betroffenen Entität geprüft. Befindet sich diese bereits im erwarteten Zielzustand, wird keine erneute Zustandsänderung durchgeführt. (z.B: Order-Service beim Abschluss (Completed) einer Bestellung)
+
+* **Zustandsbasierte Berechnungen**: Fachliche Werte (z.B: Gesamtpreise) werden aus dem aktuellen Zustand der Entitäten neu berechnet, anstatt inkrementell verändert zu werden. Dadurch bleiben Berechnungen auch bei wiederholter Event-Verarbeitung konsistent. (z.B: Order-Service bei der Berechnung des Gesamtpreises & Positionspreises bei einer Positionsänderung)
+
+Diese Massnahmen stellen sicher, dass der Systemzustand auch bei mehrfacher Zustellung derselben Events konsistent und korrekt bleibt und keine unerwünschten Nebeneffekte auftreten.

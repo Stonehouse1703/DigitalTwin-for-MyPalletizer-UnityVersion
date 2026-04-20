@@ -1,0 +1,200 @@
+ifndef::imagesdir[:imagesdir: ../images]
+
+// TODO: Entwurfsentscheide auflisten.
+// Hinweis: Hier die verwendeten Patterns (z.B. Adapter, Strategy) dokumentieren (jeweils mit Diagramm und kurzer Beschreibung).
+
+[[section-design-decisions]]
+== Architecture Decisions
+
+In diesem Kapitel werden die wesentlichen Architekturentscheidungen beschrieben, die während der Entwicklung des Systems getroffen wurden. Diese Entscheidungen beeinflussen massgeblich die Struktur und das Verhalten der Software.
+
+=== Aufbau eines Microservices
+
+Alle Microservices verwenden das Micronaut Framework. Alle Microservices verwenden eine ähnliche Projektstruktur.
+
+[source, text]
+----
+g08-user-service
+└── ch.hslu.swda.user
+    ├── dto
+    ├── logging
+    ├── messaging
+    ├── repository
+    │   └── entities
+    ├── services
+    └── Application.java
+----
+
+*dto*
+
+Objekte, die speziell für den Datentransfer zwischen API-Gateway und dem Microservice genutzt werden. Meist leichtgewichtige Klassen oder Records.
+
+*logging*
+
+Enthält die `LogEvent` Klasse die für das fachliche Logging verwendet wird.
+
+*messaging*
+
+Beinhaltet Komponenten, die mit Micronaut RabbitMQ arbeiten. Listener, Publisher und Binding-Interfaces, die Ereignisse asynchron verarbeiten oder weiterleiten.
+
+*repository*
+
+Schnittstellen für den Datenzugriff über Micronaut Data. Die Methoden werden dynamisch generiert und greifen über Hibernate JPA auf die Datenbank zu.
+
+*repository.entities*
+
+Persistente Datenmodelle, die über JPA-Annotationen definiert sind. Sie definieren die Tabellenstrukturen der zugrundeliegenden Datenbank.
+
+*services*
+
+Zentrale Geschäftslogik. Die Services orchestrieren Datenzugriffe, Messaging-Interaktionen und Validierungen.
+
+*Application.java*
+
+Die Hauptklasse, die die Micronaut-Applikation startet. Sie initialisiert Dependency Injection, Konfigurationen und sämtliche Beans des Projekts.
+
+=== Synchrone Kommunikation
+
+Die Kommunikation zwischen dem Gateway und den Microservices erfolgt synchron über RabbitMQ. Mittels Reply-To-Queues wird eine direkte Antwort auf Anfragen ermöglicht.
+
+Die verwendete Micronaut-Integration für RabbitMQ erleichtert die Implementierung dieser Kommunikation, indem sie Annotationen bereitstellt, die den Code für das Senden und Empfangen von Nachrichten vereinfachen.
+
+==== Beispiel
+
+Auf der Senderseite wird beispielsweise folgender `UserPublisher` mit entsprechenden Annotationen definiert:
+
+[source, java]
+----
+@RabbitClient(UserConfig.USER_EXCHANGE)
+public interface UserPublisher {
+    @Binding(UserConfig.USER_CREATE_QUEUE_NAME)
+    @RabbitProperty(name = "replyTo", value = "amq.rabbitmq.reply-to")
+    ServiceResponse<UserDto> create(UserCreateRequest req);
+
+    @Binding(UserConfig.USER_AUTH_QUEUE_NAME)
+    @RabbitProperty(name = "replyTo", value = "amq.rabbitmq.reply-to")
+    ServiceResponse<AuthDto> authenticate(UserAuthRequest req);
+}
+----
+
+Auf der Empfängerseite wird ein entsprechender `UserSubscriber` definiert:
+
+[source, java]
+----
+@RabbitListener
+public class UserSubscriber {
+    @Inject
+    private UserService userService;
+
+    @Queue(Config.USER_CREATE_QUEUE_NAME)
+    public ServiceResponse<UserDto> createUser(UserCreateRequest req) {
+        return userService.createUser(req);
+    }
+
+    @Queue(Config.USER_AUTH_QUEUE_NAME)
+    public ServiceResponse<AuthDto> authenticate(UserAuthRequest req) {
+        return userService.authenticate(req);
+    }
+}
+----
+
+Von einer Subscriber-Methode kann direkt ein Rückgabewert zurückgegeben werden, der dann automatisch an die Reply-To-Queue gesendet wird.
+
+==== Rückgabewerte und Fehlerbehandlung über RabbitMQ
+
+Die Rückgabewerte der Subscriber-Methoden sind in `ServiceResponse<T>`-Objekten gekapselt, die entweder ein Ergebnis oder eine Fehlermeldung enthalten können. Dies ermöglicht eine konsistente Fehlerbehandlung über die Microservices hinweg.
+
+Die `ServiceException`-Klasse enthält eine Fehlerbeschreibung und einen Fehlertyp.
+
+Auf Gateway-Seite können die `ServiceResponse<T>`-Objekte mittels `.mapToHttpResonse()` in HTTP-Antworten umgewandelt werden.
+
+[source, java]
+----
+public final class ServiceResponse<T> {
+    private final boolean success;
+    private final T value;
+    private final ServiceException error;
+
+    public ServiceResponse(T value, ServiceException error, boolean success) {
+        this.value = value;
+        this.error = error;
+        this.success = success;
+    }
+
+    public static <T> ServiceResponse<T> success(T data) {
+        return new ServiceResponse<>(data, null, true);
+    }
+
+    public static <T> ServiceResponse<T> failure(ServiceException error) {
+        return new ServiceResponse<>(null, error, false);
+    }
+
+    public boolean isSuccess() {
+        return success;
+    }
+
+    public T getValue() {
+        return value;
+    }
+
+    public ServiceException getError() {
+        return error;
+    }
+
+    public HttpResponse<?> mapToHttpResponse() {
+        if (!this.isSuccess()) {
+            return switch (this.getError().getType()) {
+                case ServiceExceptionType.UNKNOWN_ERROR, ServiceExceptionType.INTERNAL_ERROR ->
+                        HttpResponse.serverError(this.getError());
+                case ServiceExceptionType.AUTHENTICATION_ERROR -> HttpResponse.unauthorized();
+                case ServiceExceptionType.VALIDATION_ERROR, ServiceExceptionType.REQUEST_ERROR ->
+                        HttpResponse.badRequest(this.getError());
+            };
+        }
+
+        return HttpResponse.ok(this.getValue());
+    }
+}
+----
+
+==== Blockierende Aufrufe im Gateway
+
+Die Aufrufe der Publisher-Methoden sind blockierend, d.h. der aufrufende Thread wartet, bis eine Antwort empfangen wird. Micronaut verarbeitet eingehende HTTP-Requests standardmässig auf der Netty Event-Loop, auf der keine blockierenden Operationen ausgeführt werden dürfen. Daher müssen die Aufrufe der Publisher-Methoden in einem separaten Thread-Pool ausgeführt werden. Dazu können die Methoden der Controller-Klassen mit entsprechenden Annotationen versehen werden. (Siehe auch link:https://docs.micronaut.io/latest/guide/#:~:text=Using%20%40ExecuteOn%20For%20Blocking%20Methods[Micronaut Dokumentation])
+
+
+[source, java]
+----
+@Post
+@ExecuteOn(TaskExecutors.BLOCKING)
+public HttpResponse<?> createUser(@Body @Valid UserCreateRequest request) {
+    return userService.createUser(request).mapToHttpResponse();
+}
+----
+
+
+=== Erstellen und Senden von Log-Nachrichten für das Monitoring
+
+Um Log Nachrichten an den Monitoring-Service zu senden verwenden die Microservices einen herkömmlichen RabbitMQ Publisher der die Log-Nachrichten asynchron in die entsprechende Queue versendet.
+
+Da die `LogEvent` Klasse über viele Parameter verfügt, wurde ein Builder Pattern implementiert, um die Erstellung von Log-Nachrichten zu vereinfachen.
+
+[source, java]
+----
+logPublisher.send(
+    LogEvent.builder()
+            .withMessage("Created stock article " + saved.getArticleId())
+            .withSource("inventory-service")
+            .withLevel(LogLevel.INFO)
+            .withLinkType("STOCK_ARTICLE")
+            .withLinkId(String.valueOf(saved.getArticleId()))
+            .withTimestampNow()
+            .build()
+);
+----
+
+=== Entscheidung für Loki und Grafana im Monitoring
+Für das Monitoring der Microservices wurde die Kombination aus Loki und Grafana gewählt. Loki ist speziell für die Verarbeitung grosser Logmengen konzipiert und speichert Logs sehr effizient, da nur Labels indexiert werden. Dadurch bleibt der Ressourcenverbrauch gering, während mit LogQL dennoch eine flexible und schnelle Suche möglich ist.
+
+Grafana dient als zentrales Visualisierungs- und Dashboard-Tool. Es bietet übersichtliche Darstellungen der Logdaten, ermöglicht das Einbinden verschiedener Datenquellen und unterstützt Alerting-Funktionen zur frühzeitigen Erkennung von Problemen.
+
+Auf die Entwicklung einer eigenen Lösung wurde bewusst verzichtet, da etablierte Werkzeuge wie Loki und Grafana wesentlich ausgereifter sind und ohne grossen Implementierungsaufwand ein stabiles und erweiterbares Monitoring bereitstellen.

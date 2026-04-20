@@ -1,0 +1,90 @@
+ifndef::imagesdir[:imagesdir: ../images]
+
+// TODO: Listen Sie hier Entscheidungen zu Architektur, Design, Modularisierung, Implementation, und Testing auf, welche später zu
+// Problemen, Einschränkungen oder Mehraufwand in der Verwendung oder Weiterentwicklung der Umsetzung führen können.
+
+[[section-technical-risks]]
+== Risks and Technical Debts
+
+Dieses Kapitel beschreibt Risiken und technische Schulden, die sich aus den getroffenen Architektur- und Implementationsentscheidungen ergeben. Die genannten Punkte stellen keine unmittelbaren Fehler dar, können jedoch bei Erweiterung, Betrieb oder Weiterentwicklung des Systems zu zusätzlichem Aufwand oder Einschränkungen führen.
+
+=== Risks
+
+|===
+| Risiko | Beschreibung | Mögliche Auswirkung | Einordnung
+
+| Eventual Consistency zwischen Services
+| Die Microservices kommunizieren asynchron über RabbitMQ und besitzen jeweils eigene Datenbanken.
+| Kurzfristig inkonsistente Zustände, z. B. Bestellung existiert, Lagerprüfung oder Preisberechnung noch nicht abgeschlossen.
+| Bewusste Architekturentscheidung zugunsten loser Kopplung.
+
+Statusmaschinen begrenzen die Auswirkungen.
+
+| Zentrale Abhängigkeit von RabbitMQ
+| RabbitMQ ist die zentrale Komponente für die gesamte Service-übergreifende Kommunikation.
+| Bei Ausfall des Brokers werden Geschäftsprozesse verzögert oder blockiert.
+| Für das Projekt akzeptiert
+
+| Gateway als zentraler Einstiegspunkt
+| Das Gateway bündelt Routing, Authentifizierung und Validierung.
+| Fehler oder Performance-Probleme wirken sich auf alle Clients aus.
+| Stateless umgesetzt
+
+Skalierung und Rate-Limiting nicht im Fokus des Projekts.
+|===
+
+=== Technical Debts
+
+|===
+| Technical Debt | Beschreibung | Mögliche Auswirkung | Begründung
+
+| Kein Outbox-Pattern
+| Datenbank-Änderungen und das Auslösen von Folge-Events erfolgen getrennt.
+| Orders können gespeichert sein, ohne dass der Folgeprozess gestartet wird.
+| Vereinfachte Implementierung
+
+Produktiv wäre eine Outbox-Lösung robuster.
+
+| Fehlende Dead-Letter-Queues
+| Fehlgeschlagene Events werden nicht separat abgelegt oder erneut verarbeitet.
+| Fehler bleiben länger unentdeckt oder müssen manuell korrigiert werden.
+| Logging vorhanden
+
+Gezieltes Reprocessing nicht implementiert.
+
+| Fehlende Correlation-IDs
+| Events und Logs enthalten keine einheitliche technische Korrelation.
+| Zusammenhängende Abläufe sind schwer über Service-Grenzen hinweg nachvollziehbar.
+| Vereinfachtes Logging
+
+
+| Automatische Schema-Migration
+| Datenbankschema wird automatisch über Hibernate angepasst.
+| Risiko inkonsistenter Datenbankzustände bei Deployments.
+| Für schnelle Entwicklung gewählt
+
+Migrationstool nicht eingesetzt.
+
+| Begrenzte End-to-End-Testabdeckung
+| Die automatisierten Tests fokussieren sich primär auf einzelne Services und deren lokale Logik.
+| Fehler im Zusammenspiel mehrerer Services (z. B. über Event-Flows) werden erst spät oder nur durch manuelle Tests erkannt.
+| Für das Projekt werden manuelle Systemtests durchgeführt.
+
+Für eine produktive Liveumgebung sollte geprüft werden, ob zusätzlich automatisierte Systemtests implementiert werden.
+
+| Schichtenarchitektur in den Microservices
+| Es wurde versucht, in den Microservices eine reduzierte Schichtenarchitektur umzusetzen. Im Verlauf der Entwicklung wurde diese aber teilweise verletzt.
+| Erschwerte Wartbarkeit und Erweiterbarkeit der Microservices durch vermischte Verantwortlichkeiten. Grob über den Daumen geschätzt rechnen wir mit ca. 30h Arbeitsaufwand für ein vollständiges Refactoring aller Services.
+| Fokus auf funktionale Anforderungen und schnelle Umsetzung. Zeitliche Limitationen kommen hinzu.
+
+| Mehrere fachliche Verantwortlichkeiten in einem Service (Bounded Context Violation)
+| Der Inventory-Service beinhaltet mehrere fachliche Verantwortlichkeiten (Artikelverwaltung, Nachbestellungen, Pending Order Queue). Es wurde zu Beginn bewusst auf eine Aufteilung in mehrere Microservices verzichtet. Mit der Zeit sind insbesondere der Restock-Order-Service und PendingOrderQueueService deutlich gewachsen.
+| Erschwerte Wartbarkeit und Erweiterbarkeit durch vermischte Verantwortlichkeiten.
+| Zeitliche Limitationen, Fokus auf funktionale Anforderungen und initiale Vereinfachung der Deployment-Komplexität.
+
+| Fehlende Handhabung von Nicht-Lieferbaren Nachbestellungen
+| Der Restock-Order-Service hat keine korrekte Logik zur Handhabung von Nachbestellungen, die nicht erfüllt werden können (z. B. Artikel nicht lieferbar im Zentrallager).
+Nachbestellungen werden in kleinere Einheiten aufgeteilt, um Teil-Lieferungen zu ermöglichen, aber es gibt keinen Mechanismus zur Behandlung von Fällen, in denen eine Nachbestellung komplett fehlschlägt.
+| Bestellungen können in einen unerwarteten Zustand geraten, wenn Nachbestellungen nicht erfüllt werden können. Der Zustand, dass eine Nachbestellung nicht lieferbar ist, wird nicht explizit behandelt.
+| Die Definition des Zentrallagers wurde falsch verstanden. Es wurde angenommen, dass das Zentrallager immer lieferfähig ist. 
+|===

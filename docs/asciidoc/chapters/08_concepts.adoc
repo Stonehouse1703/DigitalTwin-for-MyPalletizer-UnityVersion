@@ -1,0 +1,183 @@
+ifndef::imagesdir[:imagesdir: ../images]
+
+// TODO: Konzepte, welche mehrere Komponenten betreffen (z.B. Schnittstellen, Datenmodell, Testing, Sicherheit) beschreiben.
+// Hinweise:
+// - Hier die proprietäre Schnittstelle zwischen LoggerComponent und LoggerServer dokumentieren.
+// - Hier die Teststrategie dokumentieren (ca. 1/2 A4-Seite):
+//   - Auf welchem Level (System, Komponente, Unit) werden welche Funktionalitäten getestet. Mit Begründung der Wahl.
+//   - Welche Funktionalität wird automatisch getestet und welche manuell? Mit Begründung der Wahl.
+//   - Welche Funktionalität wird auf einer bestimmten Stufe (z.B. Unit) getestet aber nicht auf einer anderen (z.B. System)? Mit Begründung der Entscheidung.
+//   - Zusätzliche Informationen, z.B. ob und für welche Funktionalitäten Test-First eingesetzt wird mit Begründung.
+
+
+[[section-concepts]]
+== Cross-cutting Concepts
+
+=== Input Validierung
+
+Die Validierung der Eingabedaten erfolgt mittels Annotationen direkt in den DTO-Klassen des Gateways. Micronaut unterstützt diese Validierung nahtlos und stellt sicher, dass nur gültige Daten an die Services weitergeleitet werden.
+
+Beispielsweise wird in der `UserCreateRequest`-Klasse sichergestellt, dass alle erforderlichen Felder ausgefüllt sind und dass die Email-Adresse ein gültiges Format hat:
+
+[source, java]
+----
+@Serdeable
+public record UserCreateRequest(
+        @NotBlank String firstName,
+        @NotBlank String lastName,
+        @NotBlank @Email String email,
+        @NotBlank String password,
+        @NotBlank String role
+) { }
+----
+
+Es kann auch vorkommen, dass Microservices eigene Validierungen durchführen, um sicherzustellen, dass die Daten den spezifischen Anforderungen entsprechen. Zum Beispiel überprüft der UserService, ob ein Benutzer mit entsprechender Email bereits existiert, bevor ein neuer Benutzer erstellt werden kann. Sollte dies nicht der Fall sein, wird eine entsprechende Fehlermeldung zurückgegeben.
+
+[source, java]
+----
+public ServiceResponse<UserDto> createUser(UserCreateRequest req) {
+        // ...
+
+        if (userRepository.findByEmail(req.email()).isPresent()) {
+            LOG.warn("User with email {} already exists", req.email());
+            return ServiceResponse.failure(new ServiceException("User with email " + req.email() + " already exists", ServiceExceptionType.VALIDATION_ERROR));
+        }
+
+        // ...
+}
+----
+
+=== Authentifizierung und Autorisierung
+
+Die Authentifizierung und Autorisierung der Benutzer erfolgt im Gateway mittels JWT (JSON Web Tokens).
+
+Über den entsprechenden Endpunkt (`/auth`) können Benutzer ihre Zugangsdaten (E-Mail und Passwort) übermitteln, diese werden an den UserService weitergeleitet dieser prüft die Zugangsdaten und gibt bei erfolgreicher Authentifizierung ein JWT zurück.
+
+Das Token enthält die Berechtigungen (Rolle) des Benutzers und wird für nachfolgende Anfragen verwendet, um den Zugriff auf geschützte Ressourcen zu kontrollieren. Es wurde entschieden, dass Token standardmässig mit einer Gültigkeitsdauer von 24 Stunden auszustellen. Im Sinne der Simplizität wurde auf die Implementierung von Refresh-Tokens verzichtet. Das heisst, nach Ablauf der Gültigkeitsdauer muss sich der Benutzer erneut authentifizieren, um ein neues Token zu erhalten.
+
+Das Token muss bei Anfragen auf geschützte Endpunkte im Authorization-Header als Bearer-Token mitgesendet werden. Das Gateway kann die Gültigkeit des Tokens unabhängig vom UserService überprüfen, da er über den symmetrischen Schlüssel (Generation Secret) verfügt, der zur Signierung der Tokens verwendet wurde.
+
+image:FBS-auth.png[]
+
+=== Berechtigungen
+
+Im FBS-System gibt es vier Rollen mit unterschiedlichen Berechtigungen. Diese Rollen werden im JWT-Token des Benutzers gespeichert und bei jeder Anfrage überprüft. Dafür werden die Endpunkte der Controller-Klassen mit entsprechenden Annotationen versehen, die den Zugriff basierend auf der Rolle des Benutzers einschränken.
+
+[source, java]
+----
+@Get("/customers")
+@RolesAllowed({"BRANCH_MANAGER", "SALES_PERSON"})
+@ExecuteOn(TaskExecutors.BLOCKING)
+public HttpResponse<?> getAllCustomers() {
+    return customerService.getAllCustomers().mapToHttpResponse();
+}
+----
+
+Beim Starten des Systems wird ein Standard-Administrator-Benutzer erstellt, falls noch kein Benutzer im System existiert. Dieser Benutzer hat die Rolle `SYS_ADMIN` und kann verwendet werden, um weitere Benutzer zu erstellen und das System zu verwalten. Die Zugangsdaten des Standard-Administrators sind folgende:
+
+* Email: `admin@fbs.ch`
+* Passwort: `admin`
+
+Im Folgenden sind die Controller-Endpunkte mit den entsprechenden erlaubten Rollen aufgelistet:
+
+|===
+| Controller | HTTP Method | Route (`/api/v1/`) | Erlaubte Rollen
+
+| **AuthController** | POST | `/auth` | **Alle**
+
+| **UserController** | GET | `/users` | **SYS_ADMIN**
+| **UserController** | GET | `/users/{id}` | **SYS_ADMIN**
+| **UserController** | POST | `/users` | **SYS_ADMIN**
+| **UserController** | DELETE | `/users/{id}` | **SYS_ADMIN**
+
+| **CustomerController** | GET | `/customers` | **BRANCH_MANAGER**, **SALES_PERSON**
+| **CustomerController** | GET | `/customers/{id}` | **BRANCH_MANAGER**, **SALES_PERSON**
+| **CustomerController** | POST | `/customers` | **BRANCH_MANAGER**, **SALES_PERSON**
+| **CustomerController** | PUT | `/customers/{id}` | **BRANCH_MANAGER**, **SALES_PERSON**
+
+| **OrderController** | POST | `/orders` | **BRANCH_MANAGER**, **SALES_PERSON**
+| **OrderController** | GET | `/orders` | **BRANCH_MANAGER**, **SALES_PERSON**
+| **OrderController** | PUT | `/orders/{id}` | **BRANCH_MANAGER**, **SALES_PERSON** (Basis), **BRANCH_MANAGER**, **WAREHOUSE_MANAGER** (für `COMPLETED`)
+
+| **StockArticleController** | GET | `/stock-articles/{id}` | **BRANCH_MANAGER**, **SALES_PERSON**
+| **StockArticleController** | GET | `/stock-articles` | **BRANCH_MANAGER**, **SALES_PERSON**
+| **StockArticleController** | POST | `/stock-articles` | **BRANCH_MANAGER**
+| **StockArticleController** | DELETE | `/stock-articles/{id}` | **BRANCH_MANAGER**
+| **StockArticleController** | PUT | `/stock-articles/{id}/min-quantity` | **BRANCH_MANAGER**
+
+| **RestockController** | GET | `/restock-orders` | **BRANCH_MANAGER**, **DATA_TYPIST**
+| **RestockController** | POST | `/restock-orders` | **BRANCH_MANAGER**
+| **RestockController** | PUT | `/restock-orders/{uuid}/restock/` | **BRANCH_MANAGER**, **DATA_TYPIST**
+|===
+
+=== Testing
+
+==== Testarten
+
+Um eine gute Softwarequalität sicherzustellen, werden folgende Testarten eingesetzt:
+
+* Automatisierte Tests
+
+** Unit-Tests: Werden dort eingesetzt, wo sinnvolle isolierte Tests möglich sind.
+
+** Integrationstests: Diese bilden den Schwerpunkt der automatisierten Tests. Sie testen die Zusammenarbeit mehrerer Komponenten. Micronnaut bietet hierfür Annotationen, die es ermöglichen, In-Memory-Datenbanken und gemockte Services zu verwenden, um die Tests unabhängig von externen Systemen zu machen.
+
+* Manuelle Systemtests
+
+** Use-Cases, die nur schwer automatisiert testbar sind oder deren Automatisierung den Aufwand nicht rechtfertigt, werden manuell getestet.
+
+
+** Alle manuellen Tests werden als Whitebox-Tests vom Entwicklerteam durchgeführt, da keine separaten Stakeholderrollen existieren.
+
+==== Testabdeckung und Ebenenwahl
+
+* Funktionalitäten die besonders kritisch sind und gut isoliert getestet werden können, wie zum Beispiel das Password-Hashing und die JWT-Generierung, werden auf Unit-Test-Ebene abgedeckt.
+
+* Die Grundfunktionalitäten (vor allem Business-Logik) der Microservices können mit Integrationstests gut abgedeckt werden, da Micronaut die Zusammenarbeit der Komponenten vereinfacht. Micronaut kümmert sich um die Dependency-Injection und ermöglicht auch gleich das Testing der Persistenz-Layer, indem eine In-Memory-Datenbank verwendet wird.
+
+* Die Interaktion mit dem API-Gateway wird mit Systemtests überprüft, da hier die Integration aller Microservices und die Kommunikation über RabbitMQ getestet werden muss. Im Rahmen dieses Projektes kamen wir zum Schluss, dass die Automatisierung dieser Systemtests in Form von Integrationstests (z.B. mit Test-Containers) den Aufwand nicht rechtfertigt, weshalb diese Tests manuell durchgeführt werden.
+
+==== Systemtests
+Die manuellen Systemtests werden anhand von vordefinierten Testfällen durchgeführt, die die wichtigsten Use-Cases abdecken. Dabei wird überprüft, ob die End-to-End-Funktionalität wie erwartet funktioniert.
+
+Die Test-Drehbücher sowie die Ergebnisse sind in folgendem Dokument zu finden. link:https://gitlab.switch.ch/hslu/edu/bachelor-computer-science/swda/25hs01/g08/g08-documentation/-/tree/main/src/docs/asciidoc/assets/system-tests.pdf[Systemtests]
+
+=== Logging und Monitoring
+
+==== Ziel
+
+Das Logging im FBS dient ausschliesslich der Erfassung **fachlicher Ereignisse**.
+Technische Logs (z. B. Exceptions, Framework-Logs, Infrastrukturmeldungen) werden nicht über den Monitoring-Service erfasst.
+
+Durch das zentrale Sammeln dieser fachlichen Log-Messages im Monitoring-Service und deren Persistierung in Loki entsteht eine transparente, durchgängige Nachvollziehbarkeit fachlicher Abläufe über alle Microservices hinweg. Grafana ermöglicht darauf aufbauend ein Dashboard zur auswertung.
+
+==== fachliche Log-Messages
+
+Da nur fachliche Vorgänge geloggt werden, beziehen sich alle Log-Messages direkt auf betriebliche Ereignisse im Filialbestellsystem.
+
+Typische fachliche Log-Messages sind:
+
+* **Benutzerverwaltung (User-Service)**
+- Benutzer erstellt
+- Benutzer aktualisiert
+
+* **Kundenverwaltung (Customer-Service)**
+- Kunde erstellt
+- Kunde aktualisiert
+
+* **Artikelverwaltung (Inventory-Service)**
+- Artikel erstellt
+- Artikel aktualisiert
+
+* **Restock-Service**
+- Restock Rein (Warenzugang)
+- Restock Raus (Warenabgang)
+
+Diese Log-Messages spiegeln ausschliesslich **fachliche Systemereignisse** wider.
+Sie werden über RabbitMQ an den Monitoring-Service gesendet und in Loki gespeichert.
+Damit können z. B. folgende Fragen beantwortet werden:
+
+* "Wann wurden neue Artikel angelegt?"
+* "Wie viele Kunden wurden diese Woche erstellt oder aktualisiert?"
+* "Wurde ein bestimmter Benutzer geändert – und von wem?"
+* "Wann fand der letzte Restock einer Filiale statt?"

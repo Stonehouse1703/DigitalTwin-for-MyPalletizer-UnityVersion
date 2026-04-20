@@ -1,0 +1,77 @@
+[[section-deployment-view]]
+== Deployment View
+
+Dieser Abschnitt beschreibt, wie das Filialbestellsystem (FBS) lokal für die Entwicklung
+sowie im produktiven Betrieb auf der SWDA-Virtual-Machine (VM) ausgeführt wird.
+Das Deployment erfolgt containerbasiert mit Docker und wird über eine GitLab-CI/CD-Pipeline automatisiert.
+
+=== Produktives Deployment (VM)
+
+Das produktive System wird automatisch über eine GitLab-CI/CD-Pipeline auf die projektspezifische
+SWDA-Virtual-Machine deployt. Der Ablauf ist standardisiert:
+
+. **Build**: Der Code wird kompiliert unt in ein Docker-Image verpackt.
+. **Test**: Automatisierte Tests werden ausgeführt, um die Qualität sicherzustellen.
+. **Deploy**: Das Docker-Image wird auf die SWDA-VM übertragen und dort gestartet.
+
+=== Laufzeitumgebung (Produktiv)
+
+Die folgende Abbildung zeigt die tatsächliche Laufzeitumgebung des Systems im produktiven Betrieb:
+
+image::../images/Productive Network Setup.drawio.png[]
+
+Auf der produktiven VM laufen folgende Hauptkomponenten:
+
+* **API-Gateway**: zentrale REST-Schnittstelle für externe Clients
+* **Order-Service**: Verwaltung von Bestellungen
+* **Customer-Service**: Verwaltung von Kundendaten und Kundenstatus
+* **Inventory-Service**: Verwaltung von Artikeln und Lagerbeständen
+* **User-Service**: Authentifizierung und Benutzerverwaltung
+* **Monitoring-Service**: Verarbeitung und Weiterleitung von LogEvents
+* **RabbitMQ**: zentraler Message-Bus für die interne Kommunikation
+* **MySQL-Datenbanken**: je eine pro Service (Database-per-Service)
+* **Traefik**: Reverse-Proxy für externe Zugriffe
+* **Portainer**: Verwaltung der Container
+* **Grafana & Loki**: zentrales Logging und Monitoring
+
+Die Services kommunizieren intern über ein separates Netzwerk (`bus`).
+Externe Zugriffe erfolgen über Traefik im `ingress`-Netzwerk.
+
+=== Deployment für lokale Entwicklung (DEV)
+
+Für die lokale Entwicklung läuft der aktuell entwickelte Service direkt auf dem
+Notebook/Desktop des Entwicklers. Die benötigten Infrastruktur-Komponenten werden
+über Docker gestartet.
+
+In Docker laufen:
+
+* RabbitMQ als Message-Bus
+* MySQL als Datenbank
+* Portainer zur Containerverwaltung
+
+Der lokale Service verbindet sich über das interne Docker-Netzwerk mit RabbitMQ
+und MySQL. Der Zugriff erfolgt über die freigegebenen Host-Ports (z. B. 5672 für
+RabbitMQ und 3306 für MySQL).
+
+Die folgende Abbildung zeigt den Aufbau der lokalen Entwicklungsumgebung:
+
+image::../images/LocalNetworkSetup.drawio.png[]
+
+=== Zugriff auf das Monitoring (Grafana)
+
+Für das Monitoring der Microservices steht dem System-Administrator eine Grafana-Oberfläche zur Verfügung.
+
+==== Zugriff im produktiven Betrieb
+
+* **URL:** https://grafana.swarm-008.swda.labservices.ch/d/ef4m3g1qp91c0a/logs?[https://grafana.swarm-008.swda.labservices.ch/grafana]
+* **Benutzername:** `admin@fbs.ch`
+* **Passwort:** `g08-swda-2025`
+
+==== Zugriff in der lokalen Entwicklungsumgebung
+
+In der lokalen Entwicklungsumgebung ist Grafana über folgende Adresse erreichbar:
+
+* **URL:** http://localhost:3000/
+* **Standard-Benutzername:** `swda`
+* **Standard-Passwort:** `swda`
+

@@ -1,0 +1,32 @@
+ifndef::imagesdir[:imagesdir: ../images]
+
+// TODO: Beschreibung der Bausteinsicht hinzufügen. Für VSK obligatorisch.
+// In Fall von VSK erwarten wir alle die Ebenen 2 bs 4 des C4-Modells (Diagramme aber kein Code).
+// Zu allen Diagrammen wird eine Beschreibung erwartet.
+
+[[section-building-block-view]]
+
+== Building Block View
+
+=== Domain Modell
+
+Das Domain Modell beschreibt die zentralen Entitäten und deren Beziehungen innerhalb des Systems. Es bildet die fachlichen Konzepte ab, die für die Geschäftslogik relevant sind.
+
+image::FBS-domain-model-V2.drawio.png[]
+
+Das Modell umfasst mehrere Kontexte (bounded contexts), die unterschiedliche Bereiche der Anwendung repräsentieren:
+
+* **Monitoring Context**: Wird für die Überwachung und Protokollierung der fachlichen Systemereignisse verwendet.
+* **Customer Context**: Modelliert den die Entität Customer und wird verwendet, um Kundeninformationen zu verwalten.
+* **User Context**: Beinhaltet die Entität User, die für die Authentifizierung und Autorisierung der System-Benutzer zuständig ist.
+* **Order Context**: Enthält die Entitäten `CustomerOrder`, `OrderPosition` sowie `CustomerOrderState`, die für die Verwaltung von Bestellungen und deren Positionen verantwortlich sind.
+* **Inventory Context**: Umfasst die Entität `StockArticle` und dient der Verwaltung von Lagerbeständen und Artikeln bei einer Filiale.
+* **Restock Context**: Beinhaltet die Entitäten `RestockOrder` und `RestockOrderState`, die für die Nachbestellung von Artikeln im Lager verwendet werden.
+
+Die Beziehungen zwischen den Entitäten sind durch Assoziationen dargestellt, die die Interaktionen und Abhängigkeiten innerhalb des Systems verdeutlichen. Die Trennung in verschiedene Kontexte ermöglicht eine klare Strukturierung der Geschäftslogik und erleichtert die Aufteilung des Systems in Microservices.
+
+=== API Gateway Klassen Diagramm
+
+Im folgenden Diagramm ist die Business-Layer des API-Gateways ersichtlich. Diese Schicht ist für die Verarbeitung der Anfragen von Clients verantwortlich und leitet diese an die entsprechenden Microservices weiter. Sie ist besonders interessant, weil sie die Schnittstelle zwischen den Clients und den Microservices bildet.
+
+image::FBS-gateway-api.png[]

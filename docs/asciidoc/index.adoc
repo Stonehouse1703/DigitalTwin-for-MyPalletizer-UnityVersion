@@ -1,0 +1,84 @@
+= DigitalTwin for MyPalletizer 260 M5 Unity Version
+:imagesdir: ./images
+:toc: preamble
+:toclevels: 1
+:toc-title: Inhaltsverzeichnis
+:numbered:
+
+image::tittle.webp[]
+
+== Einführung
+Diese Dokumentation beschreibt das Architektur- und Entwurfskonzept des Projekts DigitalTwin for MyPalletizer 260 M5 Unity Version .
+Das Projekt wurde im Rahmen des Moduls Applied Artificial Intelligence (APPLAI) an der Hochschule Luzern (HSLU) im Frühlingssemster 2026 entwickelt.
+
+Dabei stand die Entwicklung eines digitalen Zwillings für den MyPalletizer 260 M5 im Fokus, welcher in der Unity-Engine implementiert wurde. Der digitale Zwilling soll die physische Maschine realistisch abbilden und es ermöglichen, verschiedene Szenarien zu simulieren und zu analysieren. Ziel ist es, dass Studenten und Fachleute den Roboterarm in einer virtuellen Umgebung testen und optimieren können, bevor sie ihn in der realen Welt einsetzen.
+
+Ziel dieser Dokumentation ist es, die zentralen Architekturentscheidungen, Systemkomponenten und technischen Konzepte des entwickelten Systems nachvollziehbar darzustellen.
+Sie dient sowohl als technische Referenz für die Implementierung als auch als Nachweis der erarbeiteten Softwarearchitektur im Modul APPLAI.
+
+Das ist die Dokumentation (auch als link:index.pdf[PDF]) von Colin Felber.
+
+== Team
+
+Das Team besteht aus folgenden Personen:
+
+*Entwickler*:
+
+* Felber, Colin <colin.felber@stud.hslu.ch>
+
+*Betreuperson / Bewertung*:
+
+* Prof. Dr. Jana Koehler <jana.koehler@hslu.ch>
+
+:numbered:
+
+<<<
+// 1. Introduction and Goals
+include::chapters/01_introduction_and_goals.adoc[]
+
+<<<
+// 2. Architecture Constraints
+include::chapters/02_architecture_constraints.adoc[]
+
+<<<
+// 3. System Scope and Context
+include::chapters/03_system_scope_and_context.adoc[]
+
+<<<
+// 4. Solution Strategy
+include::chapters/04_solution_strategy.adoc[]
+
+<<<
+// 5. Building Block View
+include::chapters/05_building_block_view.adoc[]
+
+<<<
+// 6. Runtime View
+include::chapters/06_runtime_view.adoc[]
+
+<<<
+// 7. Deployment View
+include::chapters/07_deployment_view.adoc[]
+
+<<<
+// 8. Concepts
+include::chapters/08_concepts.adoc[]
+
+<<<
+// 9. Architecture Decisions
+include::chapters/09_architecture_decisions.adoc[]
+
+<<<
+// 10. Quality Requirements
+include::chapters/10_quality_requirements.adoc[]
+
+<<<
+// 11. Microservices
+include::chapters/11_micro_services.adoc[]
+
+<<<
+// 12. Technical Risks
+include::chapters/12_technical_risks.adoc[]
+
+'''
+image::HSLU-Logo-21-klein.png[]

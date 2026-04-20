@@ -1,0 +1,50 @@
+ifndef::imagesdir[:imagesdir: ../images]
+
+// TODO: Beschreibung (als Auflistung) der Umsetzung von bekannten und relevanten «nicht funktionalen»-Anforderungen an das zu entwickelnde System.
+//
+// Beispiele:
+// - Wie garantieren Sie das Ihr System die Antwort (Reply) zu einer Anforderung (Request) innerhalb von maximal 100ms versendet?
+// - Wie garantieren Sie, dass Ihr System eine Verfügbarkeit von 99.9% hat?
+// - Wie garantieren Sie das Nachrichten, welche vom System, erhalten werden nicht verloren gehen?
+// - usw.
+
+
+[[section-quality-scenarios]]
+== Quality Requirements
+
+=== Quality-Tree
+
+[cols="1,3"]
+|===
+|Qualitätsattribut |Beschreibung
+
+|Zuverlässigkeit |Bestellungen dürfen nicht verloren gehen. Gibt es Netzwerkprobleme oder andere Störungen, soll der Datenverlust minimiert werden.
+
+|Verfügbarkeit |Das System muss erreichbar sein.
+
+|Performance |Bestellvorgänge müssen innerhalb von 2 Sekunden bestätigt werden.
+
+|Sicherheit |Zugriffe müssen sicher authentifiziert und autorisiert sein; nur autorisierte Benutzer dürfen auf das System zugreifen.
+
+|Skalierbarkeit |Das System muss eine wachsende Anzahl von Bestellungen und Nutzer verarbeiten können.
+
+|Wartbarkeit |Änderungen am Bestellprozess oder der Benutzerverwaltung müssen ohne große Komplexität möglich sein.
+|===
+
+=== Quality Scenarios
+
+[cols="1,2,3,4"]
+|===
+|Szenario-ID |Qualitätsattribut |Beschreibung |Akzeptanzkriterien
+|QS-001 |Zuverlässigkeit |Wie wird gewährleistet, dass Bestellungen bei einem Netzwerkausfall oder einer Datenbankstörung nicht verloren gehen? |RabbitMQ wird im durable Modus betrieben, um sicherzustellen, dass Nachrichten persistent gespeichert werden. Microservices verwenden je eine eigene Datenbank, um die Auswirkungen von Datenbankstörungen zu minimieren.
+
+|QS-002 |Verfügbarkeit |Wie stellen wir sicher, dass das System während der Betriebszeiten durchgängig erreichbar ist, selbst wenn ein einzelner Dienst ausfällt? |Das System nutzt containerisierte Dienste (Microservices), die automatisch neu gestartet oder ersetzt werden, falls ein Microservice ausfällt.
+
+|QS-003 |Performance |Wie schnell muss eine Bestellbestätigung an den Filialmitarbeiter zurückgemeldet werden, nachdem die Bestellung erfasst wurde? |Die Bestätigung über den erfolgreichen Erhalt einer Bestellung (Erfassung) muss innert 2 Sekunden erfolgen.
+
+|QS-004 |Sicherheit |Wie wird sichergestellt, dass nur authentifizierte und autorisierte Filialmitarbeiter Zugriff auf sensible Bestell- und Kundendaten haben? |Jeder Zugriff erfordert eine Authentifizierung (JWT Token) im Gateway. Die Autorisierung basiert auf zugewiesenen Rollen (Role-Based Access Control).
+
+|QS-005 |Skalierbarkeit |Wie kann das System eine Verdopplung des Bestellvolumens und eine steigende Anzahl von Nutzern ohne Leistungseinbußen bewältigen? |Die Dienste sind horizontal skalierbar (stateless) und können durch Lastverteilung (Load Balancing) automatisch oder manuell in ihren Instanzen erhöht werden, um Spitzenlasten abzufangen. Allerdings müssen redundante Services die gleiche Datenbank nutzen, was die Skalierbarkeit etwas einschränkt.
+
+|QS-006 |Wartbarkeit |Wie können Änderungen an der Logik des Bestellprozesses oder der Benutzerverwaltung ohne Ausfallzeit durchgeführt werden? |Das System ist modular aufgebaut (Microservices), sodass Änderungen in einem Dienst isoliert implementiert und per Continuous Delivery ausgerollt werden können, ohne andere Komponenten zu beeinträchtigen.
+|===
