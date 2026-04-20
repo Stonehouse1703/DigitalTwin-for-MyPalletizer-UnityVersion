@@ -1,36 +1,51 @@
 ifndef::imagesdir[:imagesdir: ../images]
 
-// TODO: Übersicht über die Problemstellung (Auftrag und Ziel).
-
 [[section-introduction-and-goals]]
 == Introduction and Goals
-Ziel des Projekts ist die Entwicklung einer Simulationsumgebung für den MyPalletizer 260 M5, einem Roboterarm, der primär für das erlernen vom Programmieren von Roboterärmen gedacht ist. Der digitale Zwilling soll die physische Maschine realistisch abbilden und es ermöglichen, verschiedene Szenarien zu simulieren und visuell zu analysieren. Ziel ist es, dass Studenten und Fachleute den Roboterarm in einer virtuellen Umgebung testen und optimieren können, bevor sie ihn in der realen Welt einsetzen. Zudem besitzt die Hochschule Luzern bereits zwei MyPalletizer 260 M5, welche jedoch nicht für alle Studentenprojekte ausreichen. Durch die Entwicklung eines digitalen Zwillings können mehr Studenten von der Möglichkeit profitieren, mit dem Roboterarm zu arbeiten, ohne auf die physische Hardware angewiesen zu sein und somit die Lernmöglichkeiten erweitern.
 
-Zudem ist die Simulation öffentlich zugänglich, was es ermöglicht, dass auch Personen ausserhalb der Hochschule Luzern von der Möglichkeit profitieren können, mit dem digitalen Zwilling zu arbeiten und zu lernen. Zudem muss auch kein physischer Roboterarm mehr angeschafft werden, was Kosten spart und somit auch für kleinere Bildungseinrichtungen zugänglich macht oder für privat Personen, die sich für das Programmieren von Roboterarmen interessieren.
+Das Projekt **DigitalTwin for MyPalletizer 260 M5** zielt darauf ab, eine hochperformante und physikalisch akkurate Simulationsumgebung für den MyPalletizer-Roboterarm zu schaffen. Durch die Bereitstellung einer identischen Programmierschnittstelle für Hardware und Simulation wird der Lernprozess in der Robotik effizienter, sicherer und ortsunabhängiger gestaltet.
 
 === Functional Requirements
-Der Digital Twin für den MyPalletizer 260 M5 soll folgende funktionale Anforderungen erfüllen:
 
-* Für jedes Betriebssystem (Windows, Linux, macOS) verfügbar sein.
-* Eine einfache Installation und Konfiguration ermöglichen, um die Simulation schnell und unkompliziert nutzen zu können.
-* Realistische Simulation der Bewegungen und Funktionen des MyPalletizer 260 M5.
-* Das Programmieren des Roboterarms in der Programmiersprache Python ermöglichen.
-* Das Programmierte in der Simulation, auf dem echten Roboterarm oder beides gleichzeitig ausführen können.
-* Eine benutzerfreundliche Oberfläche für die Interaktion mit der Simulation bereitstellen.
-** Objekte in der Simulation platzieren können, um verschiedene Szenarien zu erstellen.
-** Verschiedene Kameraperspektiven und Ansichten der Simulation ermöglichen.
-** Eine visuelle Darstellung der Bewegungen und Aktionen des Roboterarms bereitstellen.
-** Roboterzubehör wie der Greifer oder der  Saugnapf in der Simulation verwenden können.
-* Eine Dokumentation und Tutorials für die Nutzung der Simulation bereitstellen.
+Das System erfüllt die folgenden funktionalen Kernanforderungen:
+
+* **Hybride Steuerung**: Nahtlose Umschaltung zwischen `virtual` (Simulation), `real` (Hardware) und `both` (Synchron) Betriebsmodi über eine zentrale Python-Klasse.
+* **Gelenksteuerung (Kinematik)**: 
+    - Präzise Vorgabe von Gelenkwinkeln für alle 4 Achsen des Roboters.
+    - Unterstützung von relativen und absoluten Bewegungen.
+    - Konfigurierbare Bewegungsgeschwindigkeit zur Anpassung an reale Hardware-Limits.
+* **End-Effektor-Simulation**:
+    - Steuerung eines parallelen Greifers (Öffnen/Schließen mit variablem Winkel).
+    - Simulation einer Vakuumpumpe inklusive physikalischem Ansaugen von Objekten über Trigger-Zonen.
+* **Dynamische Szenariengestaltung**:
+    - Echtzeit-Erzeugung (Spawn) und Löschung von 3D-Primitiven (Boxen, Kugeln) zur Laufzeit über Python.
+    - Zuweisung von physikalischen Eigenschaften (Masse, Reibung) und Farben an gespawnte Objekte.
+    - Speichern und Laden von Szenarien-Presets für reproduzierbare Experimente.
+* **Visuelles Feedback & Status**:
+    - Echtzeit-Darstellung der Roboterbewegung in Unity.
+    - Steuerung der am Roboterkopf befindlichen LED-Statusanzeige (RGB-Werte).
+    - Verschiedene Kameraperspektiven in Unity zur Analyse komplexer Bewegungsabläufe.
 
 === Quality Goals
-Die wichtigsten Qualitätsziele für das Projekt sind:
 
-* **Maintainability**: Einfache Wartung und Erweiterung der Simulation, um zukünftige Anforderungen und Verbesserungen zu ermöglichen.
-* **Reliability**: Zuverlässige Simulation, die realistische Ergebnisse liefert und stabil läuft.
-* **Testability**: Einfaches Testen der Simulation, um Fehler frühzeitig zu erkennen und zu beheben.
-* **Transparency**: Klare Dokumentation und Nachvollziehbarkeit der Architekturentscheidungen.
-* **Deployability**: Einfache Bereitstellung und Konfiguration der Simulation auf verschiedenen Plattformen.
+Die Architektur orientiert sich an den folgenden Qualitätszielen (angelehnt an ISO 25010):
 
+[cols="1,2,3", options="header"]
+|===
+| Ziel | Szenario | Maßnahme
+| **Latenzoptimierung** | Ein Bewegungsbefehl muss in < 50ms visuell umgesetzt werden. | Nutzung von UDP (User Datagram Protocol) und Multithreaded Empfangslogik in Unity, um Rendering-Latenzen zu vermeiden.
+| **Hardware-Treue** | Die Simulation muss physikalische Gelenklimits und Geschwindigkeiten einhalten. | Einsatz von Unity Articulation Bodies mit PID-Regelung und Kalibrierung gegen CAD-Daten.
+| **Wartbarkeit** | Neue End-Effektoren (z.B. Kamera-Aufsätze) sollen leicht integrierbar sein. | Modularer Aufbau durch Adapter-Patterns und klare Trennung von Protokoll-Logik und Hardware-Abstraktion.
+| **Portabilität** | Die Software muss auf Windows, Linux und macOS identisch funktionieren. | Einsatz von plattformunabhängigen Engines (Python 3.12 / Unity 6).
+|===
 
+=== Stakeholders
 
+[cols="1,2,2", options="header"]
+|===
+| Stakeholder | Rolle | Interessen / Erwartungen
+| **Studierende (HSLU)** | Endnutzer | Einfache Installation ("Zero-Config"), intuitive Python-API, fehlerverzeihende Simulationsumgebung (kein Hardware-Schaden bei Fehlern).
+| **Dozierende (APPLAI Modul)** | Auftraggeber / Prüfer | Verlässliches Tool für die Lehre, einfache Korrektur von Studentenprojekten ohne Hardware-Zwang, hohe Reproduzierbarkeit von Ergebnissen.
+| **Robotik-Enthusiasten** | Externe Nutzer | Open-Source Verfügbarkeit, gute Dokumentation zur Erweiterung auf eigene Szenarien.
+| **Entwickler (Colin Felber)** | Architekt | Klare Strukturierung zur Minimierung von technischer Schuld, Dokumentation als Leistungsnachweis für das Studium.
+|===

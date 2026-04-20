@@ -1,32 +1,106 @@
 ifndef::imagesdir[:imagesdir: ../images]
 
-// TODO: Beschreibung der Bausteinsicht hinzufügen. Für VSK obligatorisch.
-// In Fall von VSK erwarten wir alle die Ebenen 2 bs 4 des C4-Modells (Diagramme aber kein Code).
-// Zu allen Diagrammen wird eine Beschreibung erwartet.
-
 [[section-building-block-view]]
-
 == Building Block View
 
-=== Domain Modell
+Die Bausteinsicht beschreibt die statische Struktur des Systems durch eine hierarchische Zerlegung in funktionale Komponenten.
 
-Das Domain Modell beschreibt die zentralen Entitäten und deren Beziehungen innerhalb des Systems. Es bildet die fachlichen Konzepte ab, die für die Geschäftslogik relevant sind.
+=== Whitebox Overall System (Level 1)
 
-image::FBS-domain-model-V2.drawio.png[]
+Auf der obersten Ebene besteht das System aus zwei Hauptcontainern: der Python Control Layer und der Unity Visualization Layer.
 
-Das Modell umfasst mehrere Kontexte (bounded contexts), die unterschiedliche Bereiche der Anwendung repräsentieren:
+[plantuml, target="diagram-building-blocks-l1", format="png"]
+----
+@startuml
+!include <c4/C4_Component.puml>
 
-* **Monitoring Context**: Wird für die Überwachung und Protokollierung der fachlichen Systemereignisse verwendet.
-* **Customer Context**: Modelliert den die Entität Customer und wird verwendet, um Kundeninformationen zu verwalten.
-* **User Context**: Beinhaltet die Entität User, die für die Authentifizierung und Autorisierung der System-Benutzer zuständig ist.
-* **Order Context**: Enthält die Entitäten `CustomerOrder`, `OrderPosition` sowie `CustomerOrderState`, die für die Verwaltung von Bestellungen und deren Positionen verantwortlich sind.
-* **Inventory Context**: Umfasst die Entität `StockArticle` und dient der Verwaltung von Lagerbeständen und Artikeln bei einer Filiale.
-* **Restock Context**: Beinhaltet die Entitäten `RestockOrder` und `RestockOrderState`, die für die Nachbestellung von Artikeln im Lager verwendet werden.
+System_Boundary(digital_twin_system, "Digital Twin System") {
+    Container(python_api, "Python Control Layer", "Python 3.12", "Verantwortlich für Steuerlogik, Hardware-Abstraktion und API-Bereitstellung.")
+    Container(unity_sim, "Unity Visualization Layer", "Unity 6 (C#)", "Verantwortlich für 3D-Rendering, Physik-Simulation und Umgebungsmanagement.")
+}
 
-Die Beziehungen zwischen den Entitäten sind durch Assoziationen dargestellt, die die Interaktionen und Abhängigkeiten innerhalb des Systems verdeutlichen. Die Trennung in verschiedene Kontexte ermöglicht eine klare Strukturierung der Geschäftslogik und erleichtert die Aufteilung des Systems in Microservices.
+Rel(python_api, unity_sim, "Steuerbefehle (Gelenkwinkel, Welt-Events)", "UDP / JSON")
+@enduml
+----
 
-=== API Gateway Klassen Diagramm
+==== Contained Building Blocks
 
-Im folgenden Diagramm ist die Business-Layer des API-Gateways ersichtlich. Diese Schicht ist für die Verarbeitung der Anfragen von Clients verantwortlich und leitet diese an die entsprechenden Microservices weiter. Sie ist besonders interessant, weil sie die Schnittstelle zwischen den Clients und den Microservices bildet.
+[cols="1,3", options="header"]
+|===
+| Baustein | Beschreibung
+| **Python Control Layer** | Diese Schicht bildet das "Gehirn" des Systems. Sie stellt die Schnittstelle zum Benutzer bereit und entscheidet über die Weiterleitung der Befehle an Hardware oder Simulation.
+| **Unity Visualization Layer** | Diese Schicht fungiert als "Körper". Sie empfängt Datenpakete und setzt diese in physikalische Bewegungen oder visuelle Änderungen in der 3D-Szene um.
+| **Schnittstelle: UDP/JSON** | Ein asynchrones Nachrichtenprotokoll zur entkoppelten Kommunikation zwischen beiden Schichten.
+|===
 
-image::FBS-gateway-api.png[]
+=== Level 2
+
+In dieser Ebene werden die internen Strukturen der beiden Hauptcontainer detailliert.
+
+==== Whitebox Python Control Layer
+
+[plantuml, target="diagram-python-l2", format="png"]
+----
+@startuml
+component "MyPalletizerController" as MPC
+component "World" as W
+component "Protocol" as P
+component "pymycobot Library" as PMC
+
+MPC -> P : nutzt für Nachrichtenaufbau
+MPC -> PMC : steuert reale Hardware
+W -> P : nutzt für Welt-Nachrichten
+@enduml
+----
+
+* **MyPalletizerController**: Zentrale Klasse zur Orchestrierung. Implementiert das Strategie-Pattern für die Betriebsmodi.
+* **World**: Verwalter der Simulationsumgebung. Kapselt Befehle zum Erzeugen und Löschen von Objekten.
+* **Protocol**: Hilfsmodul zur zustandslosen Serialisierung von Befehlen in das JSON-Format (v1).
+
+==== Whitebox Unity Visualization Layer
+
+[plantuml, target="diagram-unity-l2", format="png"]
+----
+@startuml
+component "UnityUdpBridge" as UUB
+component "WorldUdpBridge" as WUB
+component "MyPalletizerAdapter" as MPA
+component "WorldSpawnManager" as WSM
+
+UUB -> MPA : leitet Roboterbefehle weiter
+WUB -> WSM : leitet Welt-Events weiter
+@enduml
+----
+
+* **UnityUdpBridge**: Multithreaded Empfangseinheit für Roboter-relevante Daten auf Port 5005.
+* **WorldUdpBridge**: Empfangseinheit für Welt-Manipulationen auf Port 5006.
+* **MyPalletizerAdapter**: High-Level Controller, der die physikalische Gelenkkette koordiniert.
+* **WorldSpawnManager**: Verarbeitet die Instanziierung von GameObjects basierend auf den empfangenen JSON-Daten.
+
+=== Level 3
+
+Auf Level 3 betrachten wir die feinmodularen Komponenten innerhalb der Unity-Simulation, die für die physikalische Präzision verantwortlich sind.
+
+==== Whitebox MyPalletizerAdapter & Gelenke
+
+Innerhalb des `MyPalletizerAdapter` werden vier `ArticulationJointActuator`-Komponenten gesteuert, die jeweils ein physikalisches Gelenk repräsentieren.
+
+[plantuml, target="diagram-joints-l3", format="png"]
+----
+@startuml
+class MyPalletizerArticulationAdapter {
+    + MoveJointsAsync()
+    + MoveJointsSync()
+}
+
+class ArticulationJointActuator {
+    - ArticulationBody _ab
+    + MoveTo()
+}
+
+MyPalletizerArticulationAdapter "1" *-- "4" ArticulationJointActuator
+@enduml
+----
+
+* **ArticulationJointActuator**: Diese Komponente ist das Herzstück der Bewegungssimulation. Sie greift direkt auf Unitys `ArticulationBody` zu und nutzt Coroutinen, um eine geschwindigkeitsbasierte Bewegung (`degPerSec`) zu simulieren. Dies stellt sicher, dass der Roboterarm nicht "teleportiert", sondern physikalisch plausibel schwenkt.
+* **ArticulationBody (Unity-intern)**: Verwendet den *Reduced Coordinate Space* zur stabilen Simulation der kinematischen Kette ohne Drifts.

@@ -1,0 +1,27 @@
+ifndef::imagesdir[:imagesdir: ../images]
+
+[[section-technical-risks]]
+== Risks and Technical Debts
+
+Dieses Kapitel identifiziert potenzielle Schwachstellen und technische Kompromisse, die während der Entwicklung eingegangen wurden.
+
+=== Architektur-Risiken
+
+[cols="1,2", options="header"]
+|===
+| Risiko | Erläuterung & Minderung
+| **Netzwerk-Instabilität (UDP)** | Da UDP keine Zustellung garantiert, könnten Pakete verloren gehen. *Minderung*: Das Protokoll ist zustandslos und sendet absolute Winkel. Das nächste Paket korrigiert automatisch einen verloren gegangenen Zustand.
+| **Synchronitäts-Drift** | Im Modus `both` könnte die Hardware langsamer reagieren als die Simulation (oder umgekehrt). *Minderung*: Nutzung identischer `speed`-Parameter in beiden Systemen. Langfristig wäre ein Rückkanal für Ist-Werte (Feedback Loop) notwendig.
+| **Port-Konflikte** | Die Standard-Ports 5005/5006 könnten belegt sein. *Minderung*: Die Ports sind im `MyPalletizerController` (Python) und in der `UnityUdpBridge` konfigurierbar.
+|===
+
+=== Implementierungs-Risiken & Technische Schulden
+
+* **Abhängigkeit von Unity Articulation Bodies**:
+  Die Stabilität der Simulation hängt stark von der Unity-Version (empfohlen 2021.3 LTS oder neuer) ab. Ein Downgrade würde die physikalische Konsistenz gefährden.
+* **Open-Loop Steuerung**:
+  Die Python-API setzt voraus, dass Befehle erfolgreich ausgeführt werden. Es findet keine Prüfung statt, ob eine physische oder virtuelle Kollision den Roboter gestoppt hat. Dies ist eine bewusste Entscheidung zur Reduktion der Komplexität.
+* **Modell-Präzision**:
+  Die physikalischen Parameter wie Reibung und Trägheit sind Näherungswerte. Für hochpräzise Anwendungen müsste eine Systemidentifikation am realen Roboter durchgeführt werden.
+* **API-Abhängigkeit (`pymycobot`)**:
+  Änderungen in der proprietären Herstellerbibliothek können direkte Auswirkungen auf den `real`-Modus haben. Eine Entkopplung durch einen eigenen Hardware-Abstraktions-Layer in Python wäre eine sinnvolle zukünftige Erweiterung.

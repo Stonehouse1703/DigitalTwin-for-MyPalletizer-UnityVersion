@@ -1,26 +1,37 @@
 ifndef::imagesdir[:imagesdir: ../images]
 
-// TODO: Randbedingungen, welche bei der Lösung eingehalten werden müssen, z.B. bestehende Systeme, welche unterstützt werden müssen oder spezielle Anforderungen, welche den Lösungsraum einschränken. 
-
 [[section-architecture-constraints]]
 == Architecture Constraints
-Der Digital Twin für den MyPalletizer 260 M5 Unity Version muss unter Berücksichtigung der folgenden Architektur- und Entwurfsbeschränkungen entwickelt werden:
 
-=== Existing Systems and Supported Platforms
-* Das System muss auf den Betriebssystemen Windows, Linux und macOS lauffähig sein, um eine breite Nutzerbasis zu erreichen.
-* Die Library für die Ansteuerung des Roboterarms vom Hersteller Elephant Robotics muss verwendet werden, um die Kompatibilität mit der physischen Maschine sicherzustellen.
+Die Architektur des Digital Twins unterliegt technischen, organisatorischen und konventionellen Rahmenbedingungen, die den Lösungsraum definieren.
 
-=== Technical and Architectural Constraints
-* Die unterschützte Programmiersprache für das Ansteuern des Roboterarms ist Python, da dies Programmiersprache primär von Studenten und Fachleuten genutzt wird, um Roboterarme zu programmieren. Das implementieren von anderen Programmiersprachen ist nicht vorgesehen, da diese den Projektumfang sprengen würden und die Zielgruppe hauptsächlich Python nutzt.
-* Die Simulation muss in der Unity-Engine implementiert werden, da diese eine leistungsstarke und weit verbreitete Plattform für die Entwicklung von 3D-Simulationen ist.
-* Nur die funktionalen Funktionen von der Herstellerbibliothek sollten implementiert werden, um die Komplexität zu reduzieren und die Wartbarkeit zu erhöhen. Erweiterte Funktionen oder benutzerdefinierte Funktionen sind nicht vorgesehen, da dies den Projektumfang sprengen würde und die Zielgruppe hauptsächlich die grundlegenden Funktionen benötigt.
+=== Technische Rahmenbedingungen
 
+[cols="1,2", options="header"]
+|===
+| Randbedingung | Erläuterung
+| **Programmiersprache** | Die Steuerungsschicht muss in **Python (v3.12+)** implementiert sein, um die Kompatibilität mit bestehenden Lernressourcen und der `pymycobot`-Library sicherzustellen.
+| **Simulations-Engine** | Als Visualisierungs-Engine wird **Unity** verwendet. Dies erfordert eine C#-basierte Implementierung der Empfängerlogik und die Nutzung von Unity-spezifischen Komponenten wie `ArticulationBody`.
+| **Kommunikation** | Die Ansteuerung der physischen Hardware erfolgt über eine **serielle Schnittstelle (UART via USB)** mit einer Standard-Baudrate von 115200.
+| **Inter-Prozess-Kommunikation** | Da Steuerlogik (Python) und Simulation (Unity) in getrennten Prozessen laufen, muss ein Netzwerkprotokoll (**UDP**) zur Datenübertragung genutzt werden.
+| **Hardware-Plattform** | Das System muss auf Standard-Laptops (Windows 10/11, Ubuntu 22.04+, macOS) lauffähig sein, ohne dass dedizierte Grafikkarten zwingend erforderlich sind.
+|===
 
-=== Development and Testing Constraints
-* Das Projekt wird auf einem Github-Repository entwickelt, um die Zusammenarbeit und Versionskontrolle zu gewährleisten.
-* Der Quellcode wird kontinuierlich integriert und getestet (CI/CD-Pipeline auf Github).
-* Automatisierte Unit- und manuelle Systemtests sind verpflichtend.
-* Die Dokumentation der Architekturentscheidungen und des Systemdesigns erfolgt auf der ARC42-Dokumentation.
+=== Organisatorische Rahmenbedingungen
+
+* **Open Source & Reproduzierbarkeit**: Das Projekt wird auf GitHub verwaltet. Alle Abhängigkeiten (wie `pymycobot`, `numpy`) müssen über Standard-Paketmanager (`pip`) installierbar sein.
+* **Zeitrahmen**: Die Entwicklung erfolgt iterativ innerhalb eines Semesters im Modul APPLAI.
+* **Lizenzierung**: Es werden nur Bibliotheken und Assets verwendet, die für akademische Zwecke frei verfügbar sind.
+
+=== Konventionen und Standards
+
+* **ARC42**: Die Dokumentation folgt strikt dem ARC42-Standard.
+* **C4-Modell**: Für Architekturdiagramme werden die Prinzipien des C4-Modells (Context, Container, Components) angewendet.
+* **Coding Standards**:
+    - Python: Einhaltung von PEP 8.
+    - C#: Unity Coding Conventions (PascalCase für öffentliche Member, SerializedFields für Editor-Zugriff).
+    - Kommunikation: Versionierung des JSON-Protokolls (aktuell v1).
+
 
 
 

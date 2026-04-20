@@ -1,77 +1,59 @@
+ifndef::imagesdir[:imagesdir: ../images]
+
 [[section-deployment-view]]
 == Deployment View
 
-Dieser Abschnitt beschreibt, wie das Filialbestellsystem (FBS) lokal für die Entwicklung
-sowie im produktiven Betrieb auf der SWDA-Virtual-Machine (VM) ausgeführt wird.
-Das Deployment erfolgt containerbasiert mit Docker und wird über eine GitLab-CI/CD-Pipeline automatisiert.
+Die Verteilungssicht beschreibt die physische Infrastruktur und die Softwareumgebung, in der das System betrieben wird.
 
-=== Produktives Deployment (VM)
+=== Infrastructure Level 1
 
-Das produktive System wird automatisch über eine GitLab-CI/CD-Pipeline auf die projektspezifische
-SWDA-Virtual-Machine deployt. Der Ablauf ist standardisiert:
+Das System ist für den Betrieb auf einer Standard-Workstation ausgelegt. Die optionale Hardware wird lokal per USB angebunden.
 
-. **Build**: Der Code wird kompiliert unt in ein Docker-Image verpackt.
-. **Test**: Automatisierte Tests werden ausgeführt, um die Qualität sicherzustellen.
-. **Deploy**: Das Docker-Image wird auf die SWDA-VM übertragen und dort gestartet.
+[plantuml, target="diagram-deployment-l1", format="png"]
+----
+@startuml
+node "Host PC (Windows/Linux/macOS)" as PC {
+    component "Python Application"
+    component "Unity Application"
+}
 
-=== Laufzeitumgebung (Produktiv)
+node "MyPalletizer 260 M5" as Robot {
+}
 
-Die folgende Abbildung zeigt die tatsächliche Laufzeitumgebung des Systems im produktiven Betrieb:
+PC -right-> Robot : USB (Serial)
+"Python Application" <-down-> "Unity Application" : UDP (Localhost)
+@enduml
+----
 
-image::../images/Productive Network Setup.drawio.png[]
+=== Infrastructure Level 2
 
-Auf der produktiven VM laufen folgende Hauptkomponenten:
+Auf Ebene 2 betrachten wir die spezifischen Anforderungen und Komponenten der Betriebsumgebung.
 
-* **API-Gateway**: zentrale REST-Schnittstelle für externe Clients
-* **Order-Service**: Verwaltung von Bestellungen
-* **Customer-Service**: Verwaltung von Kundendaten und Kundenstatus
-* **Inventory-Service**: Verwaltung von Artikeln und Lagerbeständen
-* **User-Service**: Authentifizierung und Benutzerverwaltung
-* **Monitoring-Service**: Verarbeitung und Weiterleitung von LogEvents
-* **RabbitMQ**: zentraler Message-Bus für die interne Kommunikation
-* **MySQL-Datenbanken**: je eine pro Service (Database-per-Service)
-* **Traefik**: Reverse-Proxy für externe Zugriffe
-* **Portainer**: Verwaltung der Container
-* **Grafana & Loki**: zentrales Logging und Monitoring
+==== Host-PC (Workstation)
 
-Die Services kommunizieren intern über ein separates Netzwerk (`bus`).
-Externe Zugriffe erfolgen über Traefik im `ingress`-Netzwerk.
+Der Host-PC benötigt folgende installierte Softwarekomponenten:
 
-=== Deployment für lokale Entwicklung (DEV)
+* **Python Runtime (v3.12)**: 
+    - Erforderlich für die Ausführung der Steuerlogik.
+    - Beinhaltet Abhängigkeiten wie `pymycobot`, `numpy` und `pyserial`.
+* **Unity-Standalone-Build**: 
+    - Die vorkompilierte Version der Simulation. Diese enthält alle Assets und die C#-Receiver-Logik.
+* **USB-Treiber (CP210x)**: 
+    - Erforderlich für die Kommunikation mit dem M5Stack-Controller des Roboters über den virtuellen COM-Port.
 
-Für die lokale Entwicklung läuft der aktuell entwickelte Service direkt auf dem
-Notebook/Desktop des Entwicklers. Die benötigten Infrastruktur-Komponenten werden
-über Docker gestartet.
+==== Netzwerk-Infrastruktur
 
-In Docker laufen:
+Obwohl das System primär auf `localhost` (127.0.0.1) betrieben wird, ermöglicht die UDP-basierte Architektur eine Verteilung der Komponenten im lokalen Netzwerk (LAN/WLAN):
 
-* RabbitMQ als Message-Bus
-* MySQL als Datenbank
-* Portainer zur Containerverwaltung
+[cols="1,2", options="header"]
+|===
+| Element | Beschreibung
+| **Port 5005 (Roboter)** | Eingehender UDP-Verkehr für Bewegungsdaten. Muss in der Firewall des Host-PCs freigegeben sein.
+| **Port 5006 (Welt)** | Eingehender UDP-Verkehr für Umgebungsbefehle.
+| **Loopback Adapter** | Minimale Latenz (< 1ms) bei lokalem Betrieb.
+|===
 
-Der lokale Service verbindet sich über das interne Docker-Netzwerk mit RabbitMQ
-und MySQL. Der Zugriff erfolgt über die freigegebenen Host-Ports (z. B. 5672 für
-RabbitMQ und 3306 für MySQL).
+==== MyPalletizer 260 M5 (Hardware)
 
-Die folgende Abbildung zeigt den Aufbau der lokalen Entwicklungsumgebung:
-
-image::../images/LocalNetworkSetup.drawio.png[]
-
-=== Zugriff auf das Monitoring (Grafana)
-
-Für das Monitoring der Microservices steht dem System-Administrator eine Grafana-Oberfläche zur Verfügung.
-
-==== Zugriff im produktiven Betrieb
-
-* **URL:** https://grafana.swarm-008.swda.labservices.ch/d/ef4m3g1qp91c0a/logs?[https://grafana.swarm-008.swda.labservices.ch/grafana]
-* **Benutzername:** `admin@fbs.ch`
-* **Passwort:** `g08-swda-2025`
-
-==== Zugriff in der lokalen Entwicklungsumgebung
-
-In der lokalen Entwicklungsumgebung ist Grafana über folgende Adresse erreichbar:
-
-* **URL:** http://localhost:3000/
-* **Standard-Benutzername:** `swda`
-* **Standard-Passwort:** `swda`
-
+* **Firmware**: Auf dem Roboter muss die aktuelle Version von *atomMain* oder *Transponder* installiert sein, um die seriellen Befehle korrekt zu verarbeiten.
+* **Energieversorgung**: Ein externes Netzteil (8.4V / 5A) ist für den Betrieb der Servos zwingend erforderlich, da die Stromversorgung über USB nicht ausreicht.

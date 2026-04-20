@@ -3,18 +3,63 @@ ifndef::imagesdir[:imagesdir: ../images]
 [[section-runtime-view]]
 == Runtime View
 
+Die Laufzeitsicht verdeutlicht das Zusammenspiel der Komponenten über Prozessgrenzen hinweg. Ein kritischer Aspekt ist dabei das Threading-Modell in Unity.
 
-=== Erfassung einer Bestellung
-Dieses Sequenzdiagramm zeigt den Ablauf bei der Erfassung einer Bestellung. Der Order-Service nimmt die Bestellung entgegen und steuert den weiteren Ablauf über Events. Bei Kunden mit offenen Mahnungen wird die Bestellung blockiert. Falls der Lagerbestand nicht ausreicht, wird eine Nachbestellung ausgelöst und die Bestellung wartet auf Nachschub.
+=== Szenario 1: Asynchrone Gelenkbewegung (Fire-and-Forget)
 
-image::runtime-bestellung-erfassen.png[]
+Dies ist der Standard-Ablauf für flüssige Bewegungen. Der Python-Thread sendet Datenpakete in hoher Frequenz, ohne auf eine Antwort zu warten.
 
-=== Nachbestellung
-Wenn ein Artikel nicht in ausreichender Menge verfügbar ist, wird die betroffene Bestellposition zusammen mit der noch fehlenden Menge als offene Pending-Position gespeichert. Nach einem Wareneingang werden diese Pending-Positionen in FIFO-Reihenfolge verarbeitet. Sobald eine Position vollständig bedient werden kann, wird der entsprechende Status per Event an den Order-Service zurückgemeldet.
+1. **Python Side**: `send_angles(j1, j2, j3, j4, speed)`
+   - Die Werte werden serialisiert und als UDP-Datagramm verschickt.
+2. **Unity Network Thread**: `UdpClient.Receive()`
+   - Der Thread blockiert, bis ein Paket eintrifft.
+   - Das JSON wird geparst und ein `RobotCommand`-Objekt in die `ConcurrentQueue` eingereiht.
+3. **Unity Main Thread**: `Update()` / `CommandRunner()`
+   - Im nächsten Frame wird der Befehl aus der Queue entnommen.
+   - Der `ArticulationAdapter` startet eine Coroutine für jedes Gelenk via `ArticulationJointActuator`.
+   - Die Physik-Engine berechnet in jedem `FixedUpdate` die neue Position basierend auf `degPerSec`.
 
-image::runtime-nachbestellung.png[]
+=== Szenario 2: Synchrone Gelenkbewegung (Sync Move)
 
-=== Änderung einer Bestellung (Position anpassen / entfernen)
-Dieses Sequenzdiagramm zeigt, wie eine bestehende Bestellung angepasst wird. Je nach Änderung wird im Inventory-Service zusätzlicher Bestand abgebucht oder bereits reservierter Bestand wieder freigegeben. Bei Fehlern wird die Bestellung auf manuelle Prüfung gesetzt.
+Obwohl UDP verbindungslos ist, bietet die API einen `sync_move_joints`-Befehl an. In der Hardware-Welt wartet der Roboter, bis die Gelenke die Zielposition erreicht haben. In der Simulation wird dies durch Coroutinen nachgebildet.
 
-image::runtime-bestellung-aendern.png[]
+[plantuml, target="diagram-runtime-sync", format="png"]
+----
+@startuml
+participant "Python Controller" as PC
+participant "Unity UDP Bridge\n(Background Thread)" as UB
+participant "Command Queue\n(Thread-Safe)" as CQ
+participant "MyPalletizer Adapter\n(Main Thread)" as AA
+participant "Joint Actuators\n(Physics Loop)" as JA
+
+PC -> UB: UDP JSON {"type": "sync_move_joints", ...}
+activate UB
+UB -> CQ: Enqueue(Command)
+deactivate UB
+
+loop solange Queue nicht leer
+    AA -> CQ: Dequeue()
+    activate AA
+    AA -> JA: MoveJointsSync(targets)
+    activate JA
+    
+    loop Physics Steps (FixedUpdate)
+        JA -> JA: Update xDrive.target
+        JA -> JA: Check if at target?
+    end
+    
+    JA --> AA: Done
+    deactivate JA
+    AA --> AA: End Sync Coroutine
+    deactivate AA
+end
+@enduml
+----
+
+=== Multithreading-Konzept in Unity
+
+Ein wesentliches Merkmal der Implementierung ist die Lösung des "Main-Thread-Only"-Problems von Unity. Da Netzwerknachrichten jederzeit eintreffen können, Unity-APIs (wie `ArticulationBody`) aber nur im Haupt-Thread aufgerufen werden dürfen, fungiert die `ConcurrentQueue` als Brücke.
+
+* **Performance-Vorteil**: Das Rendering der Simulation ruckelt nicht, selbst wenn das Netzwerk kurzzeitig hohe Latenzen aufweist oder viele Pakete gleichzeitig eintreffen.
+* **Datensicherheit**: Die Nutzung einer thread-sicheren Queue verhindert Race Conditions zwischen dem Netzwerk-Thread und der Physik-Berechnung.
+

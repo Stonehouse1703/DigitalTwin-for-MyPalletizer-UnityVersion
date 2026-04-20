@@ -1,0 +1,30 @@
+ifndef::imagesdir[:imagesdir: ../images]
+
+[[section-glossary]]
+== Glossary
+
+[cols="e,2e" options="header"]
+|===
+|Term |Definition
+
+|Digital Twin
+|Ein digitaler Zwilling ist ein virtuelles Abbild eines physischen Objekts (hier: MyPalletizer 260 M5), das dessen Verhalten und Zustand in Echtzeit simuliert.
+
+|Articulation Body
+|Eine spezielle Komponente in Unity zur physikalischen Simulation von kinematischen Ketten (Robotern), die für hohe Stabilität bei Gelenkbewegungen sorgt.
+
+|UDP
+|User Datagram Protocol. Ein verbindungsloses Netzwerkprotokoll, das für seine geringe Latenz bekannt ist.
+
+|JSON
+|JavaScript Object Notation. Ein kompaktes Datenformat zum Austausch von strukturierten Daten zwischen Python und Unity.
+
+|pymycobot
+|Die offizielle Python-Library des Herstellers Elephant Robotics zur Ansteuerung der MyRobot-Serie.
+
+|APPLAI
+|Applied Artificial Intelligence: Das Modul an der HSLU, in dem dieses Projekt entwickelt wurde.
+
+|HSLU
+|Hochschule Luzern
+|===

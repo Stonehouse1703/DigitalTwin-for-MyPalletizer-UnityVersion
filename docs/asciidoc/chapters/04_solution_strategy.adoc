@@ -3,72 +3,33 @@ ifndef::imagesdir[:imagesdir: ../images]
 [[section-solution-strategy]]
 == Solution Strategy
 
-Ziel dieser Arbeit ist die Entwicklung eines Digital Twins für den Roboterarm MyPalletizer 260 M5, welcher es ermöglicht, identische Steuerbefehle sowohl auf einem realen System als auch in einer virtuellen Simulationsumgebung auszuführen.
+Die Lösungsstrategie basiert auf einer strikten Trennung zwischen der logischen Steuerungsebene (Python) und der physikalischen Darstellungsebene (Unity).
 
-Der Fokus liegt dabei auf:
+=== Architekturelle Leitprinzipien
 
-* einer einheitlichen Steuerungsschnittstelle (Python API), welche die Interaktion mit beiden Systemen ermöglicht,
-* der parallelen Ausführung von realem System und Simulation, um eine synchronisierte Darstellung zu gewährleisten,
-* sowie einer möglichst eifnachen Erweiterbarkeit und Wartbarkeit der Architektur, um zukünftige Anpassungen und Erweiterungen zu ermöglichen.
+1. **Einheitliche Abstraktion**: Der Benutzer soll nicht wissen müssen, ob er gerade eine Simulation oder Hardware steuert. Alle modusspezifischen Unterschiede werden innerhalb des `MyPalletizerController` gekapselt.
+2. **Entkopplung durch Netzwerkschnittstellen**: Die Nutzung von UDP ermöglicht es, Steuerlogik und Visualisierung auf verschiedenen Rechnern oder in verschiedenen Prozessen laufen zu lassen. Dies schützt den Python-Prozess vor Performance-Schwankungen der 3D-Engine.
+3. **Zustandslosigkeit des Protokolls**: Jedes UDP-Paket enthält den vollständigen Soll-Zustand (z.B. alle 4 Gelenkwinkel). Dies macht die Kommunikation robust gegenüber Paketverlusten, da das nächste Paket den Zustand automatisch korrigiert.
 
-=== Architekturansatz
-Die gewählte Lösungsstrategie basiert auf einer klaren Trennung der Systemverantwortlichkeiten. Das System ist in folgende zentrale Komponenten unterteilt:
+=== Entscheidungen zur Kommunikation
 
-* ** Benutzerschnittstelle (Python API)**
-* ** Robotersteuerung (Robto)**
-* ** Simulationssteuerung (World)**
+* **Warum UDP statt TCP?**
+  In einer Echtzeit-Simulation ist Aktualität wichtiger als Vollständigkeit. Ein verloren gegangenes Paket ist unkritisch, da Millisekunden später ein neues Paket mit dem aktuellen Zustand folgt. TCP-Retransmissions würden hier zu unerwünschten "Sprüngen" und Latenzen führen.
+* **Warum JSON?**
+  JSON bietet eine hervorragende Balance zwischen Lesbarkeit (Debugging) und Performance. Da die Datenmenge pro Paket (ca. 200 Bytes) sehr gering ist, überwiegen die Vorteile der einfachen Implementierung in C# und Python gegenüber binären Formaten wie Protobuf.
 
-Diese Trennung folgt dem PRinzip der Seperation of Concerns und stellt sicher, dass unterschieldiche Aufgabenberieche unabhängig voneinander entwickelt und erweitert werden können. Die Benutzerschnittstelle ermöglicht die Interaktion mit beiden Systemen, während die Robotersteuerung und Simulationssteuerung jeweils für die spezifische Steuerung des realen Roboters bzw. der Simulation verantwortlich sind.
+=== Schichtenmodell
 
-Die Benutzerschnittstelle (Python API) bildet dabei die zentrale Zugriffschicht für den Benutzer und kapselt die interne Komplexität des Systems.
+[cols="1,2", options="header"]
+|===
+| Schicht | Verantwortung
+| **User Logic** | Das Python-Skript des Studenten. Enthält die Pfadplanung oder KI-Logik.
+| **Controller Layer** | Die `mypalletizer`-Library. Handhabt die Verteilung auf Serial/UDP und validiert Gelenklimits.
+| **Transport Layer** | JSON Serialisierung und UDP/Serial Dispatching.
+| **Execution Layer** | Unity Articulation Bodies (Simulation) oder Robot Firmware (Hardware).
+|===
 
-=== Einheitliche Steuerung über die Python API
-Die Python API stellt sämtliche Funktionen zur Steuerung des Systems bereit. Dzau gehören:
+=== Strategie zur Welt-Manipulation
 
-* Steuerung der Roboterbewegung (z.B. Gelenkwikel)
-* Steuerung von Werkzeugfunktionen (z.B. Greifer, Pumpe)
-* Setzen von Zuständen (z.B. LED)
-* Konfiguration der Simulationsumgebung
-* Erstellen und Laden von Szenarien (Presets)
-
-Ein wesentlicher Vorteil dieses Ansatzes bestht darin, dass der Benutzer unabhängig vom zielsystem stets dieselbe Schnittstelle verwendet. Dadruch können Anwendungen ohne Anpassungen sowhol in der Simulation als auch auf dem realen System ausgeführt werden.
-
-=== Betriebsmodi des Systems
-Das System unterstützt drei Betriebsmodi, welche über die Python API konfiguriert werden können
-
-* **virtual**: In diesem Modus erfolgt die Ausführung ausschliesslich in der Simulation. Alle Steuerbefehle werden an die Unity-Anwendung gesendet und dort umgesetzt, während das reale System nicht beeinflusst wird.
-* ** real**: In diesem Modus erfolgt die Ausführung ausschliesslich auf dem realen Roboter. Alle Steuerbefehle werden über die serielle Schnittstelle an den physischen Roboter gesendet, während die Simulation nicht beeinflusst wird.
-* ** both**: In diesem Modus erfolgt die parallele Ausführung von realem System und Simulation. Alle Steuerbefehle werden sowohl an den realen Roboter als auch an die Unity-Simulation gesendet, um eine synchronisierte Darstellung zu gewährleisten. Dadurch können Benutzer die Auswirkungen ihrer Befehle in Echtzeit sowohl in der physischen Welt als auch in der virtuellen Umgebung beobachten
-
-Diese Modi ermgöichen eine flexible Nutzung des Systems in verschiedenen Anwendungsfällen wie Entwicklung, Testing oder Demonstration. Benutzer können je nach Bedarf zwischen den Modi wechseln, um entweder die Simulation zu nutzen, den realen Roboter zu steuern oder beide gleichzeitig zu verwenden.
-
-=== Kommunikation mit der Simulation
-Für die Kommunikation mit der Unity-Simulation wird das UDP-Protokoll verwendet.
-Die Nachrichten werden dabei im JSON-Format übertragen und enthalten strukturierte Informationen über Bewegungen oder Zustandsänderungen.
-
-UDP wurde bewusst gewählt, da:
-
-* eine geringe Latenz erreicht wird,
-* keine Verbindungsaufbau erforderlich ist,
-* und die Kommunikation einfach implementiert werden kann.
-
-=== Verwendung separater UDP-Schnittstellen
-Für die Kommunikation mit der Unity-Anwendung werden zwei separate UDP-Schnittstellen verwendet:
-
-* Port 5005 → Robotersteuerung
-* Port 5006 → Simulationswelt
-
-Diese Trennung basiert auf unterschiedlichen Anforderungen der beiden Kommunikationsarten.
-
-Die Robotersteuerung ist zeitkritisch und erfordert eine kontinuierliche Verarbeitung von Bewegungsbefehlen.
-Die Weltverwaltung hingegen besteht aus diskreten, weniger häufigen Aktionen.
-
-Durch die Verwendung separater Ports ergeben sich folgende Vorteile:
-
-* klare Trennung der Verantwortlichkeiten
-* einfachere Verarbeitung der Nachrichten
-* bessere Erweiterbarkeit
-* geringere Wahrscheinlichkeit von Konflikten oder Verzögerungen
-
-Zusätzlich wird die Systemstruktur transparenter, da jede Schnittstelle eine klar definierte Aufgabe besitzt.
+Die Welt-Manipulation (Spawning von Objekten) wurde bewusst auf einen separaten Port (5006) ausgelagert. Während Roboterbewegungen als kontinuierlicher Stream (Stream-orientiert) betrachtet werden, sind Welt-Anderungen diskrete Ereignisse (Event-orientiert). Diese Trennung verhindert, dass ein großes JSON-Paket für eine Welt-Änderung den Fluss der Bewegungsdaten unterbricht.
 
