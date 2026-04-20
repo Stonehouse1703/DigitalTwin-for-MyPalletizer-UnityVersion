@@ -31,45 +31,44 @@ Dabei ist in diesem Projekt der Benutzer gleichzeitig auch der Entwickler, da di
 === Geschäftsprozess (BPMN)
 Die folgende BPMN darstellung zeigt die wichtigsten Prozesse, welche im Kontext des Projekts Digital Twind for MyPalletizer 260 M5 Unity Version relevant sind. Es illustriert die Interaktionen zwischen den verschiedenen Komponenten des Systems und die Datenflüsse, die für die Funktionalität des Systems relevant sind. Dabei wird gut ersichtlich, dass die Archtiktur 4 verschiedene Schnittstellen aufweist, welche im Kapitel Technical Context genauer daruf eingegangen werden.
 
-image::FBS-BPMN.drawio.png[]
-
-==== Kurzbeschreibung der Domänenprozesse
-* **Gateway**: Entgegennahme von Kundenanfragen, Erfassung oder Suche des Kunden im System und Weiterleitung der Bestellung.
-* **Order Service:** Prüft und verarbeitet eingehende Bestellungen, validiert Kundendaten, steuert Freigabe und Versand sowie Rechnungsstellung.
-* **Inventory Service:** Verwalten der Lagerbestände, Prüfen von Artikelverfügbarkeiten und automatisches Auslösen von Nachbestellungen beim Zentrallager, sobald Mindestmengen unterschritten werden.
-* **Customer Service:** Verwaltung und Pflege der Kundendaten. Er erstellt neue Kunden, prüft Mahnstatus und stellt Informationen für Bestellungen bereit.
+image::BPMN.png[]
 
 === Technical Context
 
-Die folgende Tabelle zeight die technischen Schnittstellen des Filialbestellsystems (FBS). Die Kommunikation zwischen den Komponenten und Usern erfolgt über definierte Schnittstellen und Protokolle.
+Die folgende Tabelle zeigt die zentralen technischen Schnittstellen des Digital Twins sowie deren jeweilige Aufgaben und Kommunikationsmechanismen.
 
 [cols="2,3", options="header"]
 |===
 | Schnittstelle | Beschreibung
 
-| User → Gateway
-| Abfragen von Informationen oder Ausführen von Aktionen.
-Kommunikation erfolgt über eine *REST-API*.
+| Benutzer → System (Python API)
+| Der Benutzer interagiert mit dem System über die bereitgestellte Python API. Diese stellt sämtliche Funktionen zur Steuerung des Roboterarms sowie zur Konfiguration der Simulationsumgebung bereit.
+Über die API können sowohl Bewegungen (z. B. Gelenkwinkel) als auch Werkzeugfunktionen wie Greifer oder Pumpe gesteuert werden.
 
-| User → Services
-| Benutzer interagieren nicht direkt mit den Services, sondern über das *Gateway*.
+Zusätzlich ermöglicht die API die Erstellung und Verwaltung von Szenarien innerhalb der Simulation. Dazu gehören das Erzeugen, Löschen und Zurücksetzen von Objekten in der virtuellen Umgebung.
+Es sind bereits mehrere vordefinierte Szenarien (Presets) vorhanden, welche einen schnellen Einstieg und Tests ermöglichen. Darüber hinaus können eigene Szenarien definiert werden, um spezifische Anwendungsfälle abzubilden.
 
-| Gateway → Services
-| Abfragen von Informationen oder Ausführen von Aktionen.
-Kommunikation erfolgt über *RabbitMQ*.
+| System (Python API) → Realer Roboter
+| Die Python API ermöglicht die direkte Steuerung des realen MyPalletizer-Roboters.
+Die Kommunikation erfolgt über eine serielle Schnittstelle (USB-A zu USB-C), über welche Steuerbefehle wie Gelenkbewegungen, Greiferaktionen oder Pumpensteuerung übertragen werden.
 
-| Service → Service
-| Kommunikation zwischen den Services.
-Kommunikation erfolgt über *RabbitMQ*.
+Je nach gewähltem Betriebsmodus können diese Befehle ausschliesslich an den realen Roboter gesendet oder parallel auch in der Simulation ausgeführt werden. Dadurch wird ein synchrones Verhalten zwischen realem System und digitalem Zwilling ermöglicht.
 
-| Service → Storage
-| Persistierung von Daten.
-Die Daten werden in allen Services über *JPA Hibernate* in *MySQL*-Datenbanken gespeichert.
+| System (Python API) → Unity-Simulation (Roboter)
+
+UDP-Port: 5005
+| Für die Simulation des Roboters erfolgt die Kommunikation zwischen der Python API und der Unity-Anwendung über UDP.
+Dabei werden strukturierte Nachrichten (JSON-basiert) übertragen, welche Bewegungsbefehle sowie Zustandsänderungen des Roboters enthalten.
+
+Die Unity-Simulation setzt diese Befehle in Echtzeit um und bildet das Verhalten des Roboters visuell nach. Im Betriebsmodus virtual erfolgt die Ausführung ausschliesslich in der Simulation, während im Modus both eine parallele Ausführung mit dem realen System stattfindet.
+
+| System (Python API) → Unity-Simulationswelt
+
+UDP-Port: 5006
+| Die Verwaltung der Simulationsumgebung erfolgt ebenfalls über UDP-basierte Kommunikation mit Unity.
+Dabei werden Befehle zum Erzeugen, Löschen oder Zurücksetzen von Objekten übertragen.
+
+Die Objekte werden durch Parameter wie Position, Rotation, Skalierung und Farbe definiert und in der Unity-Szene instanziiert.
+Zusätzlich können vordefinierte Szenarien geladen werden, welche mehrere Objekte in einer konsistenten Umgebung bereitstellen.
+
 |===
-
-=== Microservices Architecture
-
-Das FBS ist in mehrere Microservices unterteilt, die jeweils eine spezifische Funktionalität bereitstellen.
-Die Microservices kommunizieren über *RabbitMQ*.
-
-image::FBS-service-diagram.drawio.png[]

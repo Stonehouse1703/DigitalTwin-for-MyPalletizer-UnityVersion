@@ -3,97 +3,72 @@ ifndef::imagesdir[:imagesdir: ../images]
 [[section-solution-strategy]]
 == Solution Strategy
 
-Das Filialbestellsystem (FBS) basiert auf einer Microservice-Architektur, um die fachlichen
-Domänen wie Bestellung, Lager, Kunde und Benutzerverwaltung sauber zu trennen. Dadurch
-können Services unabhängig entwickelt, getestet und deployed werden, was Flexibilität und
-Wartbarkeit deutlich erhöht.
+Ziel dieser Arbeit ist die Entwicklung eines Digital Twins für den Roboterarm MyPalletizer 260 M5, welcher es ermöglicht, identische Steuerbefehle sowohl auf einem realen System als auch in einer virtuellen Simulationsumgebung auszuführen.
 
-Die Services kommunizieren nach aussen über ein zentrales API-Gateway (REST) und intern
-über RabbitMQ-Events. Dieser Mix aus synchroner und asynchroner Kommunikation sorgt für
-eine lose Kopplung, höhere Ausfallsicherheit und klare Verantwortlichkeiten. Jeder Service
-verwaltet seine eigene Datenbank (Database-per-Service), was technologische Unabhängigkeit
-und Skalierbarkeit unterstützt.
+Der Fokus liegt dabei auf:
 
-=== Service-Zuschnitt
+* einer einheitlichen Steuerungsschnittstelle (Python API), welche die Interaktion mit beiden Systemen ermöglicht,
+* der parallelen Ausführung von realem System und Simulation, um eine synchronisierte Darstellung zu gewährleisten,
+* sowie einer möglichst eifnachen Erweiterbarkeit und Wartbarkeit der Architektur, um zukünftige Anpassungen und Erweiterungen zu ermöglichen.
 
-Das System ist in mehrere Microservices mit klar abgegrenzten bounded contexts aufgeteilt:
+=== Architekturansatz
+Die gewählte Lösungsstrategie basiert auf einer klaren Trennung der Systemverantwortlichkeiten. Das System ist in folgende zentrale Komponenten unterteilt:
 
+* ** Benutzerschnittstelle (Python API)**
+* ** Robotersteuerung (Robto)**
+* ** Simulationssteuerung (World)**
 
-|===
-| Service | Beschreibung
+Diese Trennung folgt dem PRinzip der Seperation of Concerns und stellt sicher, dass unterschieldiche Aufgabenberieche unabhängig voneinander entwickelt und erweitert werden können. Die Benutzerschnittstelle ermöglicht die Interaktion mit beiden Systemen, während die Robotersteuerung und Simulationssteuerung jeweils für die spezifische Steuerung des realen Roboters bzw. der Simulation verantwortlich sind.
 
-| Gateway-Service
-| Einheitlicher Einstiegspunkt für alle Clients. Stellt eine REST-API bereit und kapselt die interne RabbitMQ-Kommunikation.
+Die Benutzerschnittstelle (Python API) bildet dabei die zentrale Zugriffschicht für den Benutzer und kapselt die interne Komplexität des Systems.
 
-| Order-Service
-| Verantwortlich für Lebenszyklus und Statusmaschine von Kundenbestellungen.
+=== Einheitliche Steuerung über die Python API
+Die Python API stellt sämtliche Funktionen zur Steuerung des Systems bereit. Dzau gehören:
 
-| Inventory-Service
-| Verwaltet Artikelbestände und automatische Nachbestellungen.
+* Steuerung der Roboterbewegung (z.B. Gelenkwikel)
+* Steuerung von Werkzeugfunktionen (z.B. Greifer, Pumpe)
+* Setzen von Zuständen (z.B. LED)
+* Konfiguration der Simulationsumgebung
+* Erstellen und Laden von Szenarien (Presets)
 
-| Customer-Service
-| Verwaltet Kundenstammdaten
+Ein wesentlicher Vorteil dieses Ansatzes bestht darin, dass der Benutzer unabhängig vom zielsystem stets dieselbe Schnittstelle verwendet. Dadruch können Anwendungen ohne Anpassungen sowhol in der Simulation als auch auf dem realen System ausgeführt werden.
 
-| User-Service
-| Zuständig für Benutzerverwaltung, Authentifizierung und Rollen.
+=== Betriebsmodi des Systems
+Das System unterstützt drei Betriebsmodi, welche über die Python API konfiguriert werden können
 
-| Monitoring-Service
-| Nimmt LogEvents entgegen und leitet sie an Loki zur zentralen Auswertung weiter.
-|===
+* **virtual**: In diesem Modus erfolgt die Ausführung ausschliesslich in der Simulation. Alle Steuerbefehle werden an die Unity-Anwendung gesendet und dort umgesetzt, während das reale System nicht beeinflusst wird.
+* ** real**: In diesem Modus erfolgt die Ausführung ausschliesslich auf dem realen Roboter. Alle Steuerbefehle werden über die serielle Schnittstelle an den physischen Roboter gesendet, während die Simulation nicht beeinflusst wird.
+* ** both**: In diesem Modus erfolgt die parallele Ausführung von realem System und Simulation. Alle Steuerbefehle werden sowohl an den realen Roboter als auch an die Unity-Simulation gesendet, um eine synchronisierte Darstellung zu gewährleisten. Dadurch können Benutzer die Auswirkungen ihrer Befehle in Echtzeit sowohl in der physischen Welt als auch in der virtuellen Umgebung beobachten
 
-Jeder Service besitzt sein eigenes Datenmodell und seine eigene Datenbank („database per service“)
-auf Basis von JPA/Hibernate und MySQL. Dadurch bleiben die Services lose gekoppelt und können
-unabhängig entwickelt und deployed werden.
+Diese Modi ermgöichen eine flexible Nutzung des Systems in verschiedenen Anwendungsfällen wie Entwicklung, Testing oder Demonstration. Benutzer können je nach Bedarf zwischen den Modi wechseln, um entweder die Simulation zu nutzen, den realen Roboter zu steuern oder beide gleichzeitig zu verwenden.
 
-Eine detaillierte Beschreibung der einzelnen Services inkl. Schnittstellen findet sich in <<section-micro-services,Micro-Services>>.
+=== Kommunikation mit der Simulation
+Für die Kommunikation mit der Unity-Simulation wird das UDP-Protokoll verwendet.
+Die Nachrichten werden dabei im JSON-Format übertragen und enthalten strukturierte Informationen über Bewegungen oder Zustandsänderungen.
 
-=== Technologische Basis
+UDP wurde bewusst gewählt, da:
 
-* **Programmiersprache**: Java Version 21.0.8 LTS
-* **Frameworks**: Micronaut, JPA/Hibernate, Micronaut Security (JWT), Argon2 Passwort-Hashing
-* **Kommunikation**: REST (Gateway), RabbitMQ (Events zwischen Services)
-* **Persistenz**: MySQL pro Service (Database-per-Service), automatische Schemaerstellung
-* **Logging/Monitoring**: strukturierte LogEvents → Monitoring-Service → Grafana Loki
-* **Containerisierung**: Docker, docker-compose, GitLab CI/CD
-* **Tests**: JUnit 5, Micronaut Test, H2-Integrationstests
-// TODO: Tests noeinisch überprüefe
+* eine geringe Latenz erreicht wird,
+* keine Verbindungsaufbau erforderlich ist,
+* und die Kommunikation einfach implementiert werden kann.
 
+=== Verwendung separater UDP-Schnittstellen
+Für die Kommunikation mit der Unity-Anwendung werden zwei separate UDP-Schnittstellen verwendet:
 
-=== Client-Zugriff
-Für das System wurde kein eigener GUI-Client implementiert. Der Zugriff erfolgt ausschliesslich über die REST-API. Zur einfachen Ansicht und zum manuellen Testen der Endpunkte steht eine Swagger UI zur Verfügung.
+* Port 5005 → Robotersteuerung
+* Port 5006 → Simulationswelt
 
-Die Swagger UI ist unter folgendem Link erreichbar (nur im HSLU-Netzwerk): https://gw.swarm-008.swda.labservices.ch/swagger-ui[Link]
+Diese Trennung basiert auf unterschiedlichen Anforderungen der beiden Kommunikationsarten.
 
-=== Kommunikationsstrategie
+Die Robotersteuerung ist zeitkritisch und erfordert eine kontinuierliche Verarbeitung von Bewegungsbefehlen.
+Die Weltverwaltung hingegen besteht aus diskreten, weniger häufigen Aktionen.
 
-* *Synchron*: Externe Clients kommunizieren ausschliesslich über das API-Gateway mittels REST-API.
-* *Asynchron*: Die fachlichen Microservices kommunizieren untereinander über RabbitMQ-Nachrichten
-(Commands und Events). Das entkoppelt die Services und erhöht Robustheit und Skalierbarkeit.
+Durch die Verwendung separater Ports ergeben sich folgende Vorteile:
 
-Zentrale Geschäftsprozesse (z. B. Bestellerfassung, Lagerdisposition) werden
-durch explizite Statusautomaten (Order-, Positions- und Customer-State) und Events zwischen den
-Services gesteuert.
+* klare Trennung der Verantwortlichkeiten
+* einfachere Verarbeitung der Nachrichten
+* bessere Erweiterbarkeit
+* geringere Wahrscheinlichkeit von Konflikten oder Verzögerungen
 
-=== Querschnittskonzepte
+Zusätzlich wird die Systemstruktur transparenter, da jede Schnittstelle eine klar definierte Aufgabe besitzt.
 
-* *Security & Users*: Benutzer und Rollen werden im User-Service verwaltet, Passwörter mittels
-Argon2 gehasht und über JWT (Micronaut Security) am Gateway geprüft.
-* *Monitoring & Logging*: Alle Services senden strukturierte LogEvents an einen Monitoring-Service,
-der diese an Grafana Loki weiterleitet, um fachliche Vorgänge und Fehler zentral auswerten zu können.
-* *CI/CD & Tests*: Alle Services werden containerisiert (Docker) betrieben und via GitLab CI/CD
-gebaut, getestet und deployt. Unit- und Integrationstests stellen die fachliche Korrektheit der
-Kernprozesse sicher.
-
-=== Umgang mit Event-Wiederholungen
-
-Da Nachrichten im System mehrfach zugestellt werden können (z. B. durch Wiederholungsversuche von RabbitMQ), wurde bei der Implementierung darauf geachtet, dass alle Event-Handler idempotent ausgeführt werden.
-
-Das bedeutet, dass ein Event mehrfach empfangen werden kann, ohne dass sich der fachliche Systemzustand dadurch mehrfach verändert. Dies wird durch folgende Massnahmen sichergestellt:
-
-* **Eindeutige Message-IDs**: Jedes Event enthält eine eindeutige Message-ID, anhand derer bereits verarbeitete Nachrichten erkannt und bei erneutem Empfang ignoriert werden. (z.B: beim Inventory Service für debit- und revert-Order)
-
-* **Statusprüfungen**: Vor der Verarbeitung eines Events wird der aktuelle Zustand der betroffenen Entität geprüft. Befindet sich diese bereits im erwarteten Zielzustand, wird keine erneute Zustandsänderung durchgeführt. (z.B: Order-Service beim Abschluss (Completed) einer Bestellung)
-
-* **Zustandsbasierte Berechnungen**: Fachliche Werte (z.B: Gesamtpreise) werden aus dem aktuellen Zustand der Entitäten neu berechnet, anstatt inkrementell verändert zu werden. Dadurch bleiben Berechnungen auch bei wiederholter Event-Verarbeitung konsistent. (z.B: Order-Service bei der Berechnung des Gesamtpreises & Positionspreises bei einer Positionsänderung)
-
-Diese Massnahmen stellen sicher, dass der Systemzustand auch bei mehrfacher Zustellung derselben Events konsistent und korrekt bleibt und keine unerwünschten Nebeneffekte auftreten.
