@@ -8,31 +8,37 @@ Die folgenden Architectural Decision Records (ADR) beschreiben wichtige Architek
 === ADR 1: Einheitliche Python-API für Simulation und Hardware
 
 * **Kontext**: Der Benutzer soll nicht zwischen verschiedenen APIs für Simulation und reale Hardware unterscheiden müssen.
-* **Entscheidung**: Die Klassen `Robot` und `World` bilden die zentrale Benutzerschnittstelle. Intern wird die eigentliche Ausführung an den `MyPalletizerController` oder an die Weltkommunikation delegiert. :contentReference[oaicite:0]{index=0} :contentReference[oaicite:1]{index=1}
-* **Konsequenz**: Die Benutzung des Systems wird einfacher und konsistenter. Gleichzeitig übernimmt die Python-Seite mehr Verantwortung, da sie Validierung, Moduswahl und Weiterleitung der Befehle kapselt. :contentReference[oaicite:2]{index=2} :contentReference[oaicite:3]{index=3}
+* **Entscheidung**: Die Klassen `Robot` und `World` bilden die zentrale Benutzerschnittstelle. Intern wird die eigentliche Ausführung an den `MyPalletizerController` oder an die Weltkommunikation delegiert.
+
+* **Konsequenz**: Die Benutzung des Systems wird einfacher und konsistenter. Gleichzeitig übernimmt die Python-Seite mehr Verantwortung, da sie Validierung, Moduswahl und Weiterleitung der Befehle kapselt.
 
 === ADR 2: Kapselung der Herstellerbibliothek `pymycobot`
 
 * **Kontext**: Der reale Roboter soll unterstützt werden, ohne dass der Benutzer direkt von der Herstellerbibliothek abhängig ist.
-* **Entscheidung**: Die Bibliothek `pymycobot` wird nur intern im `MyPalletizerController` verwendet. Der Benutzer arbeitet ausschliesslich mit der eigenen `Robot`-Schnittstelle. :contentReference[oaicite:4]{index=4} :contentReference[oaicite:5]{index=5} :contentReference[oaicite:6]{index=6}
+* **Entscheidung**: Die Bibliothek `pymycobot` wird nur intern im `MyPalletizerController` verwendet. Der Benutzer arbeitet ausschliesslich mit der eigenen `Robot`-Schnittstelle.
+
 * **Konsequenz**: Externe Abhängigkeiten bleiben gekapselt und die API nach aussen bleibt stabiler. Dafür entsteht eine zusätzliche Abstraktionsschicht, die gepflegt werden muss.
 
 === ADR 3: Trennung von Simulation und realer Hardware
 
 * **Kontext**: Dasselbe System soll sowohl mit der Simulation als auch mit dem realen Roboter funktionieren.
-* **Entscheidung**: Die Simulation wird über UDP angesprochen, die reale Hardware über `pymycobot` und die serielle Verbindung. Die Auswahl erfolgt intern über die Modi `virtual`, `real` und `both`. :contentReference[oaicite:7]{index=7} :contentReference[oaicite:8]{index=8}
-* **Konsequenz**: Dieselbe Python-API kann für Simulation, reale Hardware oder beide gleichzeitig verwendet werden. Dadurch bleibt die Benutzerschnittstelle einfach, obwohl intern unterschiedliche Kommunikationswege verwendet werden. :contentReference[oaicite:9]{index=9} :contentReference[oaicite:10]{index=10}
+* **Entscheidung**: Die Simulation wird über UDP angesprochen, die reale Hardware über `pymycobot` und die serielle Verbindung. Die Auswahl erfolgt intern über die Modi `virtual`, `real` und `both`.
+
+* **Konsequenz**: Dieselbe Python-API kann für Simulation, reale Hardware oder beide gleichzeitig verwendet werden. Dadurch bleibt die Benutzerschnittstelle einfach, obwohl intern unterschiedliche Kommunikationswege verwendet werden.
+
 
 === ADR 4: Trennung von Roboter- und Weltkommunikation
 
 * **Kontext**: Das System verarbeitet zwei unterschiedliche Arten von Befehlen: Roboterbefehle und Befehle zur Verwaltung der Simulationswelt.
-* **Entscheidung**: Diese beiden Bereiche werden über getrennte UDP-Kanäle umgesetzt. Port `5005` wird für die Robotersteuerung verwendet, Port `5006` für Weltbefehle. :contentReference[oaicite:13]{index=13} :contentReference[oaicite:14]{index=14}
-* **Konsequenz**: Die Kommunikation bleibt klar getrennt. Häufige Bewegungsbefehle des Roboters werden nicht mit Weltbefehlen wie `spawn`, `delete` oder `clear` vermischt. :contentReference[oaicite:15]{index=15}
+* **Entscheidung**: Diese beiden Bereiche werden über getrennte UDP-Kanäle umgesetzt. Port `5005` wird für die Robotersteuerung verwendet, Port `5006` für Weltbefehle.
+
+* **Konsequenz**: Die Kommunikation bleibt klar getrennt. Häufige Bewegungsbefehle des Roboters werden nicht mit Weltbefehlen wie `spawn`, `delete` oder `clear` vermischt.
 
 === ADR 5: Verwendung von Presets für wiederholbare Szenarien
 
 * **Kontext**: Typische Testszenarien sollen schnell geladen und reproduzierbar ausgeführt werden können.
-* **Entscheidung**: Vordefinierte Szenarien werden als Presets auf Python-Seite bereitgestellt und über `World.load_preset(...)` geladen. :contentReference[oaicite:19]{index=19} :contentReference[oaicite:20]{index=20}
+* **Entscheidung**: Vordefinierte Szenarien werden als Presets auf Python-Seite bereitgestellt und über `World.load_preset(...)` geladen.
+
 * **Konsequenz**: Tests und Demonstrationen werden einfacher und konsistenter. Gleichzeitig müssen Presets gepflegt werden, wenn sich die Simulationswelt ändert.
 
 === ADR 6: Verwendung von Articulation Bodies in Unity
