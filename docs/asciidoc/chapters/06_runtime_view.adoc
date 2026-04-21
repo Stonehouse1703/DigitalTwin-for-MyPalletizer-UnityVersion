@@ -3,63 +3,119 @@ ifndef::imagesdir[:imagesdir: ../images]
 [[section-runtime-view]]
 == Runtime View
 
-Die Laufzeitsicht verdeutlicht das Zusammenspiel der Komponenten über Prozessgrenzen hinweg. Ein kritischer Aspekt ist dabei das Threading-Modell in Unity.
+Die Laufzeitsicht zeigt, wie die einzelnen Komponenten des Systems zur Laufzeit zusammenarbeiten. Dabei ist besonders wichtig, dass das System je nach Betriebsmodus (`virtual`, `real`, `both`) unterschiedliche Ausführungspfade verwendet. Die Python-Seite übernimmt dabei die Orchestrierung, während die eigentliche Ausführung entweder in der Unity-Simulation, auf dem realen Roboter oder auf beiden Systemen gleichzeitig erfolgt. Die Moduslogik liegt im `MyPalletizerController`, während `World` separat für Änderungen an der Simulationswelt zuständig ist. :contentReference[oaicite:0]{index=0} :contentReference[oaicite:1]{index=1} :contentReference[oaicite:2]{index=2}
 
-=== Szenario 1: Asynchrone Gelenkbewegung (Fire-and-Forget)
+=== Szenario 1: Asynchrone Gelenkbewegung in der Simulation
 
-Dies ist der Standard-Ablauf für flüssige Bewegungen. Der Python-Thread sendet Datenpakete in hoher Frequenz, ohne auf eine Antwort zu warten.
+Dieses Szenario beschreibt den typischen Ablauf, wenn der Benutzer einen Bewegungsbefehl an die Simulation sendet. Dabei wird ein neuer Soll-Zustand für alle vier Gelenke übertragen, ohne dass auf eine Rückmeldung gewartet wird.
 
-1. **Python Side**: `send_angles(j1, j2, j3, j4, speed)`
-   - Die Werte werden serialisiert und als UDP-Datagramm verschickt.
-2. **Unity Network Thread**: `UdpClient.Receive()`
-   - Der Thread blockiert, bis ein Paket eintrifft.
-   - Das JSON wird geparst und ein `RobotCommand`-Objekt in die `ConcurrentQueue` eingereiht.
-3. **Unity Main Thread**: `Update()` / `CommandRunner()`
-   - Im nächsten Frame wird der Befehl aus der Queue entnommen.
-   - Der `ArticulationAdapter` startet eine Coroutine für jedes Gelenk via `ArticulationJointActuator`.
-   - Die Physik-Engine berechnet in jedem `FixedUpdate` die neue Position basierend auf `degPerSec`.
+1. **Benutzer / Python-Skript**
+   Der Benutzer ruft über die API z. B. `send_angles(j1, j2, j3, j4, speed)` auf. Diese Methode wird über die `Robot`-Klasse an den `MyPalletizerController` delegiert. :contentReference[oaicite:3]{index=3}
 
-=== Szenario 2: Synchrone Gelenkbewegung (Sync Move)
+2. **Python Control Layer**
+   Der `MyPalletizerController` begrenzt die Gelenkwinkel auf zulässige Werte, begrenzt die Geschwindigkeit und speichert die Zielwerte zusätzlich intern als Simulationszustand. Anschliessend wird eine JSON-Nachricht vom Typ `move_joints` erzeugt und per UDP an die Unity-Simulation gesendet. :contentReference[oaicite:4]{index=4} :contentReference[oaicite:5]{index=5}
 
-Obwohl UDP verbindungslos ist, bietet die API einen `sync_move_joints`-Befehl an. In der Hardware-Welt wartet der Roboter, bis die Gelenke die Zielposition erreicht haben. In der Simulation wird dies durch Coroutinen nachgebildet.
+3. **Unity Simulation**
+   Die Unity-Seite empfängt das UDP-Paket über die Roboter-Schnittstelle und verarbeitet die Nachricht. Die Zielwinkel und die Geschwindigkeit werden an den Adapter für den Roboter weitergegeben, welcher die vier Gelenke entsprechend ansteuert.
+
+4. **Visualisierung / Physik**
+   Die simulierten Gelenke bewegen sich in Richtung der übergebenen Zielwerte. Dadurch wird die Bewegung des Roboterarms in der Simulation sichtbar.
+
+Dieses Szenario entspricht dem Standardfall für flüssige Bewegungen, da der Python-Prozess laufend neue Zielwerte senden kann, ohne auf eine Antwort warten zu müssen.
+
+=== Szenario 2: Bewegung auf realer Hardware
+
+Dieses Szenario beschreibt die Ausführung eines Bewegungsbefehls auf dem echten Roboter.
+
+1. **Benutzer / Python-Skript**
+   Der Benutzer ruft wiederum `send_angles(...)` oder `send_angle(...)` auf. :contentReference[oaicite:6]{index=6}
+
+2. **Python Control Layer**
+   Der `MyPalletizerController` validiert auch hier zuerst die Eingaben. Im Modus `real` wird der Befehl nicht per UDP versendet, sondern direkt an die Herstellerbibliothek `pymycobot` weitergegeben. Dabei wird die Methode `send_angles(...)` bzw. `send_angle(...)` des Objekts `MyPalletizer260` verwendet. :contentReference[oaicite:7]{index=7} :contentReference[oaicite:8]{index=8}
+
+3. **Herstellerbibliothek / Roboter**
+   Die Bibliothek übernimmt die Kommunikation über die serielle Schnittstelle und sendet den Befehl an den realen Roboter. Dort wird die Bewegung physisch ausgeführt. Die serielle Verbindung wird beim Initialisieren des Controllers aufgebaut, wenn der Modus `real` oder `both` verwendet wird. :contentReference[oaicite:9]{index=9}
+
+Dieses Szenario ist wichtig, da es zeigt, dass das System nicht nur eine Simulation ist, sondern dieselbe API auch für die reale Hardware verwendet werden kann.
+
+=== Szenario 3: Gleichzeitige Ausführung in Simulation und Hardware
+
+Im Modus `both` wird derselbe Befehl gleichzeitig an die Unity-Simulation und an den realen Roboter gesendet.
+
+1. **Benutzer / Python-Skript**
+   Der Benutzer verwendet dieselbe API wie in den anderen Modi. Der Aufruf bleibt also unverändert. :contentReference[oaicite:10]{index=10}
+
+2. **Python Control Layer**
+   Der `MyPalletizerController` erkennt anhand des Modus, dass sowohl der UDP-Kanal als auch die Herstellerbibliothek verwendet werden sollen. Daher wird einerseits eine JSON-Nachricht an die Simulation gesendet und andererseits der entsprechende Hardware-Befehl an `pymycobot` weitergegeben. :contentReference[oaicite:11]{index=11}
+
+3. **Parallele Ausführung**
+   Die Bewegung wird gleichzeitig:
+   - in Unity dargestellt
+   - und auf dem realen Roboter ausgeführt
+
+Dadurch kann die Simulation als digitaler Zwilling des physischen Systems verwendet werden. Dieser Modus ist besonders nützlich für Demonstrationen, Vergleiche und Tests.
+
+=== Szenario 4: Verwaltung der Simulationswelt
+
+Neben der Robotersteuerung unterstützt das System auch Änderungen an der Simulationswelt. Diese laufen bewusst getrennt von der Robotersteuerung ab.
+
+1. **Benutzer / Python-Skript**
+   Der Benutzer erzeugt z. B. ein Objekt und ruft anschliessend `world.spawn(obj)` auf. Alternativ können auch `delete(name)`, `clear()` oder `load_preset(name)` verwendet werden. :contentReference[oaicite:12]{index=12} :contentReference[oaicite:13]{index=13}
+
+2. **World-Komponente**
+   Die Klasse `World` validiert zuerst das Objekt bzw. die Eingaben. Danach wird eine JSON-Nachricht für `spawn`, `delete` oder `clear` erzeugt und per UDP an den Welt-Kanal der Unity-Simulation gesendet. Standardmässig wird dafür Port `5006` verwendet. :contentReference[oaicite:14]{index=14} :contentReference[oaicite:15]{index=15} :contentReference[oaicite:16]{index=16}
+
+3. **Unity Simulation**
+   Die Unity-Seite verarbeitet diese Nachricht getrennt von den Roboterbefehlen und aktualisiert die virtuelle Szene, indem Objekte erzeugt, gelöscht oder zurückgesetzt werden.
+
+Die Trennung von Robotersteuerung und Weltverwaltung ist wichtig, damit sich häufige Bewegungsbefehle und seltenere Weltänderungen nicht gegenseitig beeinflussen.
+
+=== Szenario 5: Synchrone Gelenkbewegung
+
+Neben der asynchronen Bewegung unterstützt das System auch einen synchronen Bewegungsbefehl über `sync_move_joints(...)`. Dabei wird ebenfalls ein vollständiger Satz von Gelenkwinkeln übertragen, jedoch mit der Absicht, dass die Bewegung als gemeinsamer, koordinierter Vorgang ausgeführt wird. Auf Python-Seite wird dafür eine JSON-Nachricht vom Typ `sync_move_joints` erzeugt und an die Simulation gesendet; bei realer Hardware wird die entsprechende synchrone Methode der Herstellerbibliothek verwendet. :contentReference[oaicite:17]{index=17} :contentReference[oaicite:18]{index=18}
 
 [plantuml, target="diagram-runtime-sync", format="png"]
 ----
 @startuml
-participant "Python Controller" as PC
-participant "Unity UDP Bridge\n(Background Thread)" as UB
-participant "Command Queue\n(Thread-Safe)" as CQ
-participant "MyPalletizer Adapter\n(Main Thread)" as AA
-participant "Joint Actuators\n(Physics Loop)" as JA
+participant "Benutzer /\nPython-Skript" as User
+participant "Robot API" as Robot
+participant "MyPalletizerController" as MPC
+participant "Unity Simulation" as Unity
+participant "pymycobot /\nRealer Roboter" as HW
 
-PC -> UB: UDP JSON {"type": "sync_move_joints", ...}
-activate UB
-UB -> CQ: Enqueue(Command)
-deactivate UB
+User -> Robot: sync_move_joints(...)
+Robot -> MPC: delegiert Befehl
 
-loop solange Queue nicht leer
-    AA -> CQ: Dequeue()
-    activate AA
-    AA -> JA: MoveJointsSync(targets)
-    activate JA
-    
-    loop Physics Steps (FixedUpdate)
-        JA -> JA: Update xDrive.target
-        JA -> JA: Check if at target?
-    end
-    
-    JA --> AA: Done
-    deactivate JA
-    AA --> AA: End Sync Coroutine
-    deactivate AA
+alt Modus = virtual
+  MPC -> Unity: UDP JSON {type=sync_move_joints}
+  Unity -> Unity: Simuliert synchrone Gelenkbewegung
+else Modus = real
+  MPC -> HW: sync_send_angles(...)
+  HW -> HW: Führt Bewegung aus
+else Modus = both
+  MPC -> Unity: UDP JSON {type=sync_move_joints}
+  MPC -> HW: sync_send_angles(...)
+  Unity -> Unity: Simuliert Bewegung
+  HW -> HW: Führt Bewegung aus
 end
 @enduml
 ----
 
-=== Multithreading-Konzept in Unity
+=== Verarbeitung von Befehlen in Unity
 
-Ein wesentliches Merkmal der Implementierung ist die Lösung des "Main-Thread-Only"-Problems von Unity. Da Netzwerknachrichten jederzeit eintreffen können, Unity-APIs (wie `ArticulationBody`) aber nur im Haupt-Thread aufgerufen werden dürfen, fungiert die `ConcurrentQueue` als Brücke.
+Ein wichtiger Punkt auf Unity-Seite ist die Trennung zwischen Netzwerkempfang und eigentlicher Verarbeitung der Befehle. Netzwerknachrichten können jederzeit eintreffen, während Änderungen an der Szene und an den Robotergelenken kontrolliert innerhalb der Unity-Anwendung verarbeitet werden müssen. Deshalb werden eingehende Nachrichten zunächst entgegengenommen und danach an die zuständigen Komponenten für Robotersteuerung oder Weltverwaltung weitergegeben.
 
-* **Performance-Vorteil**: Das Rendering der Simulation ruckelt nicht, selbst wenn das Netzwerk kurzzeitig hohe Latenzen aufweist oder viele Pakete gleichzeitig eintreffen.
-* **Datensicherheit**: Die Nutzung einer thread-sicheren Queue verhindert Race Conditions zwischen dem Netzwerk-Thread und der Physik-Berechnung.
+Diese Trennung hat zwei Vorteile:
 
+* Die Kommunikation mit Python bleibt von der eigentlichen Darstellung und Simulation entkoppelt.
+* Roboterbefehle und Weltbefehle können unabhängig voneinander verarbeitet werden.
+
+=== Zusammenfassung
+
+Die Laufzeitsicht zeigt, dass das System drei zentrale Ausführungspfade besitzt:
+
+* **Simulation** über UDP
+* **reale Hardware** über `pymycobot` und Serial
+* **kombinierter Betrieb** über beide Wege gleichzeitig
+
+Zusätzlich existiert mit der `World`-Komponente ein getrennter Ablauf für Änderungen an der Simulationswelt. Diese Struktur passt zur Bausteinsicht und bildet die Grundlage dafür, dass dieselbe Benutzer-API sowohl in der Simulation als auch auf realer Hardware verwendet werden kann.
