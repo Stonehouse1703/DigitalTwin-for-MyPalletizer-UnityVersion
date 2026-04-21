@@ -72,3 +72,6 @@ Detailed setup, usage, and architecture are documented in the Wiki:
 👉 [Wiki](https://github.com/Stonehouse1703/DigitalTwin-for-MyPalletizer-UnityVersion/wiki)
 
 
+ARC42:
+👉 [LINK]([https://github.com/Stonehouse1703/DigitalTwin-for-MyPalletizer-UnityVersion/wiki](https://github.com/Stonehouse1703/DigitalTwin-for-MyPalletizer-260-M5-UnityVersion/blob/main/docs/asciidoc/index.pdf))
+
