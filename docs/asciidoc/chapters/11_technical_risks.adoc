@@ -3,25 +3,44 @@ ifndef::imagesdir[:imagesdir: ../images]
 [[section-technical-risks]]
 == Risks and Technical Debts
 
-Dieses Kapitel identifiziert potenzielle Schwachstellen und technische Kompromisse, die während der Entwicklung eingegangen wurden.
+Dieses Kapitel beschreibt mögliche Risiken sowie technische Kompromisse, die im aktuellen System bestehen.
 
 === Architektur-Risiken
 
 [cols="1,2", options="header"]
 |===
-| Risiko | Erläuterung & Minderung
-| **Netzwerk-Instabilität (UDP)** | Da UDP keine Zustellung garantiert, könnten Pakete verloren gehen. *Minderung*: Das Protokoll ist zustandslos und sendet absolute Winkel. Das nächste Paket korrigiert automatisch einen verloren gegangenen Zustand.
-| **Synchronitäts-Drift** | Im Modus `both` könnte die Hardware langsamer reagieren als die Simulation (oder umgekehrt). *Minderung*: Nutzung identischer `speed`-Parameter in beiden Systemen. Langfristig wäre ein Rückkanal für Ist-Werte (Feedback Loop) notwendig.
-| **Port-Konflikte** | Die Standard-Ports 5005/5006 könnten belegt sein. *Minderung*: Die Ports sind im `MyPalletizerController` (Python) und in der `UnityUdpBridge` konfigurierbar.
+| Risiko | Erläuterung und Minderung
+
+| **UDP ohne garantierte Zustellung**
+| Da UDP keine garantierte Zustellung bietet, können einzelne Pakete verloren gehen.
+*Minderung*: Das Protokoll überträgt jeweils den vollständigen Soll-Zustand, sodass ein späteres Paket einen verlorenen Zustand wieder korrigieren kann.
+
+| **Unterschiedliches Verhalten von Simulation und Hardware**
+| Im Modus `both` kann es vorkommen, dass Simulation und realer Roboter nicht exakt gleich schnell reagieren.
+*Minderung*: Beide Systeme verwenden dieselben Zielwerte und denselben `speed`-Parameter. Für eine genauere Synchronisation wäre in Zukunft ein Rückkanal mit Ist-Werten sinnvoll.
+
+| **Port-Konflikte**
+| Die verwendeten UDP-Ports `5005` und `5006` könnten auf einem System bereits belegt sein.
+*Minderung*: Die Ports sind konfigurierbar und können bei Bedarf angepasst werden.
+
 |===
 
-=== Implementierungs-Risiken & Technische Schulden
+=== Implementierungs-Risiken und technische Schulden
 
-* **Abhängigkeit von Unity Articulation Bodies**:
-  Die Stabilität der Simulation hängt stark von der Unity-Version (empfohlen 2021.3 LTS oder neuer) ab. Ein Downgrade würde die physikalische Konsistenz gefährden.
-* **Open-Loop Steuerung**:
-  Die Python-API setzt voraus, dass Befehle erfolgreich ausgeführt werden. Es findet keine Prüfung statt, ob eine physische oder virtuelle Kollision den Roboter gestoppt hat. Dies ist eine bewusste Entscheidung zur Reduktion der Komplexität.
-* **Modell-Präzision**:
-  Die physikalischen Parameter wie Reibung und Trägheit sind Näherungswerte. Für hochpräzise Anwendungen müsste eine Systemidentifikation am realen Roboter durchgeführt werden.
-* **API-Abhängigkeit (`pymycobot`)**:
-  Änderungen in der proprietären Herstellerbibliothek können direkte Auswirkungen auf den `real`-Modus haben. Eine Entkopplung durch einen eigenen Hardware-Abstraktions-Layer in Python wäre eine sinnvolle zukünftige Erweiterung.
+* **Abhängigkeit von Unity**
+  Die Simulation hängt von Unity und dessen Physikverhalten ab. Änderungen an der Unity-Version können Einfluss auf das Verhalten der Simulation haben.
+
+* **Open-Loop-Steuerung**
+  Die Python-Seite sendet Befehle, ohne aktiv zu prüfen, ob diese in der Simulation oder auf der Hardware exakt wie erwartet ausgeführt wurden.
+  Dies reduziert die Komplexität, bedeutet aber auch, dass kein vollständiges Feedback-System vorhanden ist.
+
+* **Begrenzte Modellgenauigkeit**
+  Die Simulation bildet den realen Roboter nur näherungsweise ab. Werte wie Bewegung, Reibung oder Interaktionen mit Objekten sind ausreichend für Tests und Demonstrationen, aber nicht für hochpräzise physikalische Analysen.
+
+* **Abhängigkeit von `pymycobot`**
+  Der Modus `real` hängt von der externen Herstellerbibliothek `pymycobot` ab. Änderungen oder Inkompatibilitäten in dieser Bibliothek können direkte Auswirkungen auf die Hardwareansteuerung haben.
+  Eine mögliche spätere Verbesserung wäre eine noch stärkere Entkopplung durch eine eigene Hardware-Abstraktionsschicht.
+
+* **Kein Rückkanal aus der Simulation**
+  Die Kommunikation zur Simulation erfolgt aktuell hauptsächlich in eine Richtung. Dadurch erhält die Python-Seite keine detaillierten Laufzeitinformationen aus Unity zurück.
+  Für zukünftige Erweiterungen könnte ein Rückkanal hilfreich sein, zum Beispiel für Statusinformationen oder Fehlerfälle.

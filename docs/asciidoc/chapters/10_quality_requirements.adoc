@@ -3,19 +3,20 @@ ifndef::imagesdir[:imagesdir: ../images]
 [[section-quality-requirements]]
 == Quality Requirements
 
-Die Qualität des Systems wird durch spezifische Szenarien messbar gemacht, die auf den in Kapitel 1 definierten Zielen basieren.
+Die Qualitätsanforderungen machen die wichtigsten Ziele des Systems anhand konkreter Szenarien messbar.
 
 === Quality Requirements Overview
 
-Das System priorisiert **Performance** (Echtzeit-Feedback) und **Usability** (Einfachheit der Nutzung für Studenten). Da es sich um ein Bildungstool handelt, ist zudem die **Fehlertoleranz** der Simulation von hoher Bedeutung.
+Für dieses System sind vor allem eine schnelle Reaktion, eine einfache Nutzung sowie ein robuster Betrieb wichtig. Da das System sowohl in der Lehre als auch für Tests verwendet wird, spielen zudem Portabilität und Wartbarkeit eine wichtige Rolle.
 
 [cols="1,2", options="header"]
 |===
 | Qualitätsmerkmal | Priorität
-| Performance (Latenz) | Sehr Hoch
+| Performance | Sehr hoch
+| Bedienbarkeit | Hoch
 | Portabilität | Hoch
+| Robustheit | Hoch
 | Wartbarkeit | Mittel
-| Zuverlässigkeit | Hoch
 |===
 
 === Quality Scenarios
@@ -23,9 +24,29 @@ Das System priorisiert **Performance** (Echtzeit-Feedback) und **Usability** (Ei
 [cols="1,2,3", options="header"]
 |===
 | ID | Qualitätsziel | Szenario
-| **QS-1** | Performance | Ein Benutzer ruft `send_angles` auf. Der Roboterarm in Unity muss innerhalb von spätestens 50ms beginnen, sich zur Zielposition zu bewegen. Gemessen wird die Zeit von der UDP-Paketerzeugung bis zum Start der Coroutine in Unity.
-| **QS-2** | Portabilität | Ein Student wechselt von einem Windows-Laptop zu einem MacBook. Das gleiche Python-Skript muss nach Installation der Abhängigkeiten (`pip install`) ohne Code-Änderung lauffähig sein und die Simulation steuern.
-| **QS-3** | Robustheit | Die Unity-Simulation wird während der Ausführung eines Python-Skripts hart beendet. Das Python-Skript darf dadurch nicht blockieren oder abstürzen (UDP-Timeout-Freiheit).
-| **QS-4** | Physikalische Treue | Ein Gelenkbefehl über den maximalen Winkel hinaus wird gesendet. Der `MyPalletizerController` muss den Wert auf das physikalische Limit klammern (Clamp), bevor er an Hardware oder Simulation gesendet wird.
-| **QS-5** | Bedienbarkeit | Ein neuer Benutzer installiert die Software. Innerhalb von 15 Minuten soll er in der Lage sein, ein Demo-Skript auszuführen und eine Bewegung in der Simulation zu sehen.
+
+| **QS-1**
+| Performance
+| Ein Benutzer ruft `send_angles(...)` auf. Die Simulation soll innerhalb kurzer Zeit sichtbar auf den Befehl reagieren. Ziel ist, dass die Bewegung in Unity innerhalb von spätestens 50 ms beginnt.
+
+| **QS-2**
+| Portabilität
+| Ein Benutzer wechselt von einem Windows-System auf macOS oder Linux. Dasselbe Python-Skript soll ohne Änderungen weiterverwendet werden können, sofern die benötigten Abhängigkeiten installiert sind.
+
+| **QS-3**
+| Robustheit
+| Die Unity-Simulation wird während der Ausführung eines Python-Skripts beendet. Das Python-Skript soll dadurch nicht blockieren oder abstürzen.
+
+| **QS-4**
+| Eingabevalidierung
+| Ein Benutzer sendet einen Gelenkwinkel ausserhalb des erlaubten Bereichs. Das System muss diesen Wert vor der Weitergabe an Simulation oder Hardware auf den zulässigen Bereich begrenzen.
+
+| **QS-5**
+| Bedienbarkeit
+| Ein neuer Benutzer installiert die Software und führt ein Beispielskript aus. Innerhalb von 15 Minuten soll er in der Lage sein, eine Bewegung in der Simulation erfolgreich zu starten.
+
+| **QS-6**
+| Wartbarkeit
+| Eine neue Nachricht für die Simulation soll ergänzt werden können, ohne bestehende Roboter- und Weltbefehle grundlegend umzubauen.
+
 |===

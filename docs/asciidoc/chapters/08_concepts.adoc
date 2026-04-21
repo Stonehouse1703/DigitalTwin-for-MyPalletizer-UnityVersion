@@ -3,71 +3,116 @@ ifndef::imagesdir[:imagesdir: ../images]
 [[section-concepts]]
 == Cross-cutting Concepts
 
-In diesem Kapitel werden die technischen Konzepte erläutert, die systemübergreifend implementiert wurden.
+In diesem Kapitel werden Konzepte beschrieben, die in mehreren Teilen des Systems verwendet werden.
 
-=== Physik-Konzept: Articulation Bodies
+=== Simulationskonzept
 
-Die Simulation des MyPalletizer nutzt Unitys `ArticulationBody`-Komponente anstelle von Standard-Rigidbodies.
+Die Simulation des Roboters wird in Unity umgesetzt. Dabei besteht der Roboter aus mehreren miteinander verbundenen Gelenken, sodass die Bewegung als kinematische Kette dargestellt werden kann.
 
 [plantuml, target="diagram-kinematic-chain", format="png"]
 ----
 @startuml
 skinparam componentStyle rectangle
 
-package "Kinematische Kette (Unity Hierarchy)" {
-    [Base (Root)] --> [J1 (Revolute)]
-    [J1 (Revolute)] --> [J2 (Revolute)]
-    [J2 (Revolute)] --> [J3 (Revolute)]
-    [J3 (Revolute)] --> [J4 (Revolute)]
-    [J4 (Revolute)] --> [End-Effektor (Gripper/Pump)]
+package "Kinematische Kette" {
+    [Base] --> [J1]
+    [J1] --> [J2]
+    [J2] --> [J3]
+    [J3] --> [J4]
+    [J4] --> [End-Effektor]
 }
 @enduml
 ----
 
-* **Vorteil**:
- Articulation Bodies verwenden "Reduced Coordinates" (Gelenkkoordinaten statt kartesischer Koordinaten). Dies verhindert das Auseinanderdriften der Gelenke bei schnellen Bewegungen oder Kollisionen, was bei Rigidbodies mit Joints oft ein Problem darstellt.
-* **Steuerung (Drive Mode)**: Die Gelenke werden im `Targets`-Modus betrieben. Jedes Gelenk hat einen PID-Regler (Proportional-Integral-Derivative), der über die Parameter `Stiffness` (P) und `Damping` (D) konfiguriert wird.
-* **Gelenk-Mapping**:
-    - `j1`: Revolute (Basis-Rotation)
-    - `j2`: Revolute (Unterarm)
-    - `j3`: Revolute (Oberarm)
-    - `j4`: Revolute (Handgelenk)
-  Jeder `ArticulationJointActuator` übersetzt die eingehenden Winkel in den `target`-Wert des jeweiligen Drives.
+Die Trennung in einzelne Gelenke ermöglicht es, Bewegungsbefehle aus der Python-Anwendung direkt auf die simulierte Roboterstruktur abzubilden. Dadurch können Zielwinkel für die einzelnen Achsen unabhängig verarbeitet und in der Simulation dargestellt werden.
+
+=== Kommunikationskonzept
+
+Ein zentrales Konzept des Systems ist die Trennung zwischen Robotersteuerung und Weltverwaltung.
+
+Für die Kommunikation zwischen Python und Unity werden deshalb zwei getrennte UDP-Schnittstellen verwendet:
+
+* **Port 5005** für Roboterbefehle
+* **Port 5006** für Weltbefehle
+
+Diese Trennung sorgt dafür, dass Bewegungsbefehle des Roboters nicht mit Befehlen zur Änderung der Simulationswelt vermischt werden.
+
+Die Nachrichten werden im JSON-Format übertragen. Dadurch ist das Protokoll einfach lesbar und leicht erweiterbar.
+
+=== Moduskonzept
+
+Das System unterstützt drei verschiedene Betriebsmodi:
+
+* **virtual** – Ausführung nur in der Simulation
+* **real** – Ausführung nur auf dem realen Roboter
+* **both** – Ausführung gleichzeitig in Simulation und Hardware
+
+Dieses Konzept ist zentral, da dieselbe Python-API in allen drei Fällen verwendet werden kann. Die Unterscheidung, wohin ein Befehl gesendet wird, erfolgt intern im System.
+
+=== Konzept zur Trennung von Robot und World
+
+Auf Python-Seite ist die Funktionalität bewusst in zwei Bereiche aufgeteilt:
+
+* **Robot**
+* **World**
+
+`Robot` ist für Bewegungen, Werkzeuge und LED-Funktionen zuständig.
+`World` verwaltet die Simulationsumgebung, also zum Beispiel das Erzeugen, Löschen und Zurücksetzen von Objekten.
+
+Dies verbessert die Übersichtlichkeit und verhindert, dass sich Robotersteuerung und Weltverwaltung unnötig vermischen.
 
 === End-Effektor-Konzept
 
-Der MyPalletizer unterstützt verschiedene Werkzeuge, die in der Simulation funktional nachgebildet wurden:
+Der Roboter unterstützt unterschiedliche Werkzeuge, insbesondere Greifer und Pumpe. Diese Werkzeuge können sowohl über die Python-API ausgewählt als auch in der Simulation nachgebildet werden.
 
-[plantuml, target="diagram-pump-state", format="png"]
+[plantuml, target="diagram-end-effector-concept", format="png"]
 ----
 @startuml
-[*] --> Idle
-Idle --> Active : Pump-On Command
-Active --> Attached : Trigger Enter & Object Found
-Attached --> Releasing : Pump-Off Command
-Releasing --> Idle : Destroy Joint Constraint
-Attached --> Idle : Object Lost (Physics Reset)
+[*] --> Werkzeug_waehlen
+Werkzeug_waehlen --> Greifer : set_end_effector("gripper")
+Werkzeug_waehlen --> Pumpe : set_end_effector("pump")
+
+Greifer --> Greifer_Aktion : open / close
+Pumpe --> Pumpe_Aktion : on / off
 @enduml
 ----
 
-* **Greifer (Gripper)**:
-  Wird über zwei gegenläufige `ArticulationBodies` simuliert. Ein `GripperController` übersetzt den binären Status (`open`/`close`) in Zielwinkel für die Greiferfinger. Physikalische Materialien mit hoher Reibung ermöglichen das Greifen von Objekten.
-* **Saugpumpe (Suction Pump)**:
-  Dieses Werkzeug nutzt ein physikalisches Constraint (z.B. ein `ConfigurableJoint`), das dynamisch erzeugt wird, wenn die Pumpe aktiviert ist und ein `GrabbableObject` den Trigger-Bereich berührt. Dies simuliert das "Ansaugen" realitätsnah.
+Dieses Konzept sorgt dafür, dass verschiedene Werkzeugarten über dieselbe Schnittstelle angesprochen werden können.
 
-=== Welt-Synchronisation & Objekt-Management
+=== Objekt- und Szenarienkonzept
 
-Um komplexe Szenarien reproduzierbar zu machen, implementiert das System ein ID-basiertes Objekt-Management.
+Für die Simulationswelt werden einfache Objekte wie Boxen, Kugeln oder Zylinder verwendet. Diese können über die Python-Seite erstellt und in Unity dargestellt werden.
 
-* **Dynamisches Spawning**: Objekte erhalten beim Erzeugen in Python einen eindeutigen Namen. Dieser Name dient in Unity als Schlüssel, um das Objekt später gezielt zu verschieben oder zu löschen.
-* **Prefab-System**: Unity hält eine Bibliothek von Prefabs (Box, Kugel, Zylinder) bereit. Der Python-Befehl definiert lediglich den Typ, die Position und die Skalierung.
+Zusätzlich unterstützt das System vordefinierte Szenarien (*Presets*), damit typische Testfälle schnell geladen werden können. Dadurch lassen sich wiederholbare Experimente und Demonstrationen einfacher durchführen.
 
-=== Test-Konzept
+Objekte werden dabei über ihren Namen angesprochen. So können sie später gezielt gelöscht oder verändert werden.
 
-Die Qualitätssicherung erfolgt auf drei Ebenen:
+=== Fehlerbehandlung und Validierung
 
-1. **Unit Tests (Python)**: Validierung der `protocol.py`. Testet, ob z.B. negative Geschwindigkeiten korrekt abgefangen oder auf den erlaubten Bereich begrenzt werden.
-2. **Integration Tests (UDP)**: Ein automatisiertes Skript sendet Test-Patterns an Unity und prüft (via Log-Analyse), ob alle Pakete in der richtigen Reihenfolge verarbeitet wurden.
-3. **Visuelle Validierung (Physik)**: Manuelle Tests zur Überprüfung der Kollisionserkennung. Beispiel: Kann der Roboter eine Box von A nach B heben, ohne dass diese durch den Greifer "rutscht"?
+Ein weiteres wichtiges Konzept ist die Validierung von Eingaben vor der Ausführung.
 
+Dazu gehören unter anderem:
 
+* Begrenzung von Gelenkwinkeln
+* Begrenzung der Geschwindigkeit
+* Prüfung von Objektparametern
+* Fehlerbehandlung bei ungültiger Konfiguration
+
+Dadurch werden fehlerhafte Befehle möglichst früh erkannt und unzulässige Zustände vermieden.
+
+=== Bereitstellungskonzept
+
+Die Software wird über eine CI/CD-Pipeline automatisiert gebaut. Für die unterstützten Betriebssysteme werden Artefakte bereitgestellt, sodass Benutzer die passende Version direkt herunterladen und starten können.
+
+Zusätzlich bleibt das Unity-Projekt zugänglich, damit die Simulation bei Bedarf weiterentwickelt oder angepasst werden kann.
+
+=== Testkonzept
+
+Die Qualität des Systems wurde vor allem durch funktionale Tests überprüft. Dazu gehören insbesondere:
+
+* Testen der Kommunikation zwischen Python und Unity
+* Testen der verschiedenen Betriebsmodi (`virtual`, `real`, `both`)
+* Testen der Roboterbewegungen und Werkzeugfunktionen
+* Testen der Weltbefehle wie `spawn`, `delete` und `clear`
+
+Zusätzlich wurde die Simulation visuell überprüft, um sicherzustellen, dass Bewegungen und Objektinteraktionen plausibel dargestellt werden.

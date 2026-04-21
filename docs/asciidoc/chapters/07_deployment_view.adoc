@@ -5,55 +5,77 @@ ifndef::imagesdir[:imagesdir: ../images]
 
 Die Verteilungssicht beschreibt die physische Infrastruktur und die Softwareumgebung, in der das System betrieben wird.
 
-=== Infrastructure Level 1
+Das System ist für den Betrieb auf einem normalen Rechner ausgelegt. Die Python-Anwendung und die Unity-Simulation laufen dabei in der Regel auf demselben Host. Optional kann zusätzlich der reale MyPalletizer 260 M5 über USB angeschlossen werden.
 
-Das System ist für den Betrieb auf einer Standard-Workstation ausgelegt. Die optionale Hardware wird lokal per USB angebunden.
-
-[plantuml, target="diagram-deployment-l1", format="png"]
+[plantuml, target="diagram-deployment-view", format="png"]
 ----
 @startuml
-node "Host PC (Windows/Linux/macOS)" as PC {
-    component "Python Application"
-    component "Unity Application"
+node "Host PC\n(Windows / Linux / macOS)" as PC {
+    component "Python Application" as PyApp
+    component "Unity Application" as UnityApp
 }
 
-node "MyPalletizer 260 M5" as Robot {
-}
+node "MyPalletizer 260 M5" as Robot
 
-PC -right-> Robot : USB (Serial)
-"Python Application" <-down-> "Unity Application" : UDP (Localhost)
+PyApp <--> UnityApp : UDP (localhost)\nPorts 5005 / 5006
+PyApp --> Robot : USB (Serial)
 @enduml
 ----
 
-=== Infrastructure Level 2
+=== Host-PC
 
-Auf Ebene 2 betrachten wir die spezifischen Anforderungen und Komponenten der Betriebsumgebung.
+Der Host-PC benötigt folgende Softwarekomponenten:
 
-==== Host-PC (Workstation)
+* **Python Runtime (ab Version 3.12)**
+  Erforderlich für die Ausführung der Steuerlogik und der Python-API.
 
-Der Host-PC benötigt folgende installierte Softwarekomponenten:
+* **Unity-Anwendung**
+  Enthält die Simulation, die Visualisierung und die Empfängerlogik für die UDP-Kommunikation.
 
-* **Python Runtime (v3.12)**: 
-    - Erforderlich für die Ausführung der Steuerlogik.
-    - Beinhaltet Abhängigkeiten wie `pymycobot`, `numpy` und `pyserial`.
-* **Unity-Standalone-Build**: 
-    - Die vorkompilierte Version der Simulation. Diese enthält alle Assets und die C#-Receiver-Logik.
-* **USB-Treiber (CP210x)**: 
-    - Erforderlich für die Kommunikation mit dem M5Stack-Controller des Roboters über den virtuellen COM-Port.
+* **USB-Seriell-Verbindung**
+  Wird benötigt, wenn der reale Roboter verwendet werden soll.
 
-==== Netzwerk-Infrastruktur
+=== Kommunikation
 
-Obwohl das System primär auf `localhost` (127.0.0.1) betrieben wird, ermöglicht die UDP-basierte Architektur eine Verteilung der Komponenten im lokalen Netzwerk (LAN/WLAN):
+Die Kommunikation zwischen Python und Unity erfolgt lokal über UDP.
 
 [cols="1,2", options="header"]
 |===
 | Element | Beschreibung
-| **Port 5005 (Roboter)** | Eingehender UDP-Verkehr für Bewegungsdaten. Muss in der Firewall des Host-PCs freigegeben sein.
-| **Port 5006 (Welt)** | Eingehender UDP-Verkehr für Umgebungsbefehle.
-| **Loopback Adapter** | Minimale Latenz (< 1ms) bei lokalem Betrieb.
+
+| **Port 5005**
+| Wird für Roboterbefehle verwendet, zum Beispiel für Gelenkbewegungen, Werkzeugbefehle oder LED-Steuerung.
+
+| **Port 5006**
+| Wird für Befehle zur Verwaltung der Simulationswelt verwendet, zum Beispiel `spawn`, `delete` oder `clear`.
+
+| **USB / Serial**
+| Verbindung zwischen Python-Anwendung und realem Roboter.
+
 |===
 
-==== MyPalletizer 260 M5 (Hardware)
+=== Bereitstellung
 
-* **Firmware**: Auf dem Roboter muss die aktuelle Version von *atomMain* oder *Transponder* installiert sein, um die seriellen Befehle korrekt zu verarbeiten.
-* **Energieversorgung**: Ein externes Netzteil (8.4V / 5A) ist für den Betrieb der Servos zwingend erforderlich, da die Stromversorgung über USB nicht ausreicht.
+Die Software wird über eine CI/CD-Pipeline automatisiert gebaut. Dabei werden für die unterstützten Betriebssysteme jeweils Artefakte erstellt.
+
+Dadurch kann der Benutzer die passende Version für sein Betriebssystem direkt herunterladen und starten, ohne die Anwendung selbst bauen zu müssen.
+
+Falls Änderungen an der Simulation vorgenommen werden sollen, kann zusätzlich das Unity-Projekt geöffnet und direkt weiterbearbeitet werden.
+
+=== MyPalletizer 260 M5
+
+Der reale Roboter ist ein optionaler Bestandteil der Laufzeitumgebung. Er wird dann benötigt, wenn das System im Modus `real` oder `both` verwendet wird.
+
+Für den Betrieb sind insbesondere folgende Punkte relevant:
+
+* Verbindung über USB / Serial
+* passende Firmware auf dem Roboter
+* externe Stromversorgung für den zuverlässigen Betrieb
+
+=== Betriebsarten
+
+Das System kann in drei Varianten betrieben werden:
+
+* **virtual** – nur Simulation
+* **real** – nur realer Roboter
+* **both** – Simulation und realer Roboter gleichzeitig
