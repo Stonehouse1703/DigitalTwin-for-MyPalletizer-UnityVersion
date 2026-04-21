@@ -3,35 +3,81 @@ ifndef::imagesdir[:imagesdir: ../images]
 [[section-architecture-constraints]]
 == Architecture Constraints
 
-Die Architektur des Digital Twins unterliegt technischen, organisatorischen und konventionellen Rahmenbedingungen, die den Lösungsraum definieren.
+Die Architektur des Digital Twins unterliegt verschiedenen technischen, organisatorischen und konventionellen Rahmenbedingungen, welche den Lösungsraum einschränken und die Umsetzung beeinflussen.
 
 === Technische Rahmenbedingungen
 
 [cols="1,2", options="header"]
 |===
 | Randbedingung | Erläuterung
-| **Programmiersprache** | Die Steuerungsschicht muss in **Python (v3.12+)** implementiert sein, um die Kompatibilität mit bestehenden Lernressourcen und der `pymycobot`-Library sicherzustellen.
-| **Simulations-Engine** | Als Visualisierungs-Engine wird **Unity** verwendet. Dies erfordert eine C#-basierte Implementierung der Empfängerlogik und die Nutzung von Unity-spezifischen Komponenten wie `ArticulationBody`.
-| **Kommunikation** | Die Ansteuerung der physischen Hardware erfolgt über eine **serielle Schnittstelle (UART via USB)** mit einer Standard-Baudrate von 115200.
-| **Inter-Prozess-Kommunikation** | Da Steuerlogik (Python) und Simulation (Unity) in getrennten Prozessen laufen, muss ein Netzwerkprotokoll (**UDP**) zur Datenübertragung genutzt werden.
-| **Hardware-Plattform** | Das System muss auf Standard-Laptops (Windows 10/11, Ubuntu 22.04+, macOS) lauffähig sein, ohne dass dedizierte Grafikkarten zwingend erforderlich sind.
+
+| **Programmiersprache**
+| Die Steuerungsschicht ist in **Python (ab Version 3.12)** implementiert.
+Dies wurde gewählt, da Python von den meisten Nutzern bereits für die Entwicklung von Bewegungsabläufen und Szenarien verwendet wird und somit gut verständlich ist.
+
+| **Simulations-Engine**
+| Für die Visualisierung wird **Unity** verwendet.
+Dies erfordert eine Implementierung der Kommunikationslogik in **C#** sowie die Nutzung von Unity-spezifischen Komponenten.
+
+| **Kommunikation (Hardware)**
+| Die Ansteuerung des realen Roboters erfolgt über eine **serielle Schnittstelle (USB)** mit einer Baudrate von 115200.
+
+| **Kommunikation (Simulation)**
+| Die Kommunikation zwischen Python (Steuerlogik) und Unity (Simulation) erfolgt über **UDP**.
+Dabei werden strukturierte Nachrichten im JSON-Format übertragen.
+
+| **Getrennte UDP-Schnittstellen**
+| Für die Simulation werden zwei separate UDP-Ports verwendet:
+Port 5005 für die Robotersteuerung und Port 5006 für die Verwaltung der Simulationswelt.
+Dies ermöglicht eine klare Trennung zwischen zeitkritischen Bewegungsbefehlen und weniger kritischen Weltaktionen.
+
+| **Prozess-Trennung**
+| Steuerlogik (Python) und Simulation (Unity) laufen in getrennten Prozessen.
+Eine direkte Integration ist nicht vorgesehen, wodurch eine lose Kopplung entsteht.
+
+| **Hardware-Plattform**
+| Das System soll auf Standard-Laptops (Windows, Linux, macOS) lauffähig sein.
+Es wird keine spezialisierte Hardware vorausgesetzt.
+
 |===
+
+---
 
 === Organisatorische Rahmenbedingungen
 
-* **Open Source & Reproduzierbarkeit**: Das Projekt wird auf GitHub verwaltet. Alle Abhängigkeiten (wie `pymycobot`, `numpy`) müssen über Standard-Paketmanager (`pip`) installierbar sein.
-* **Zeitrahmen**: Die Entwicklung erfolgt iterativ innerhalb eines Semesters im Modul APPLAI.
-* **Lizenzierung**: Es werden nur Bibliotheken und Assets verwendet, die für akademische Zwecke frei verfügbar sind.
+* **Open Source & Reproduzierbarkeit**
+  Das Projekt wird über GitHub verwaltet.
+  Alle Abhängigkeiten (z. B. `pymycobot`) müssen über Standard-Tools wie `pip` installierbar sein.
+
+* **Zeitrahmen**
+  Die Entwicklung erfolgt im Rahmen eines Semesters im Modul APPLAI.
+
+* **Verfügbarkeit der Hardware**
+  Der reale Roboter steht nur eingeschränkt im Labor zur Verfügung.
+  Dies war ein zentraler Treiber für die Entwicklung der Simulation.
+
+* **Nutzergruppe**
+  Die Hauptzielgruppe sind Studierende und Robotik-Interessierte, die den MyPalletizer kennenlernen und Bewegungsabläufe entwickeln möchten. Dabei soll die Programmierung gleich aufgebaut sein, wie die Hersteller-API, sodass nicht andere Kenntnisse als die Hersteller-API notwendig sind.
+
+---
 
 === Konventionen und Standards
 
-* **ARC42**: Die Dokumentation folgt strikt dem ARC42-Standard.
-* **C4-Modell**: Für Architekturdiagramme werden die Prinzipien des C4-Modells (Context, Container, Components) angewendet.
-* **Coding Standards**:
-    - Python: Einhaltung von PEP 8.
-    - C#: Unity Coding Conventions (PascalCase für öffentliche Member, SerializedFields für Editor-Zugriff).
-    - Kommunikation: Versionierung des JSON-Protokolls (aktuell v1).
+* **Dokumentationsstandard**
+  Die Architektur wird gemäss **ARC42** dokumentiert.
 
+* **Coding Standards**
+  - Python: Orientierung an **PEP 8**
+  - C#: Orientierung an Unity-Konventionen
 
+* **Kommunikationsprotokoll**
+  - Verwendung eines JSON-basierten Protokolls
+  - Versionierung der Nachrichten (aktuell Version 1)
 
+---
 
+=== Technische Annahmen
+
+* Die UDP-Kommunikation erfolgt lokal (localhost) und ohne Paketverlust.
+* Die Simulation muss keine vollständig physikalisch exakte Abbildung liefern, sondern ein plausibles Verhalten.
+* Der Benutzer verfügt über grundlegende Python-Kenntnisse zur Nutzung der API.

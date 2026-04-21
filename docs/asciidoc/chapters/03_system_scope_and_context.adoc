@@ -3,44 +3,44 @@ ifndef::imagesdir[:imagesdir: ../images]
 [[section-system-scope-and-context]]
 == Context and Scope
 
-In diesem Kapitel wird die Abgrenzung des Systems gegenüber externen Akteuren definiert sowie der operative Prozess (Workflow) dargestellt.
+In diesem Kapitel wird das System gegenüber externen Akteuren abgegrenzt und der typische Ablauf der Nutzung beschrieben.
 
 === Business Context
 
-Der Business Context beschreibt den Prozess aus Sicht der Anwender (Studierende/Dozierende). Das folgende Diagramm im BPMN-Stil visualisiert den typischen Ablauf einer Simulations-Session.
+Der Business Context beschreibt den Ablauf aus Sicht der Benutzer (Studierende / Robotik-Interessierte).
+Das folgende Diagramm zeigt eine typische Nutzung des Systems.
 
 [plantuml, target="diagram-bpmn-process", format="png"]
 ----
 @startuml
-|Benutzer (Student)|
+|Benutzer|
 start
 :Definiere Test-Szenario;
 :Schreibe Python-Steuerlogik;
 :Wähle Betriebsmodus\n(virtual / real / both);
 
-|#LightBlue|Digital Twin System (Python API)|
+|#LightBlue|Python API|
 :Starte Skript;
-:Validiere Gelenklimits;
+:Validiere Eingaben;
 
-if (Modus?) then (virtual / both)
-  :Serialisiere JSON;
-  :Sende UDP (Port 5005/5006);
+if (Simulation aktiv?) then (ja)
+  :Sende UDP (5005/5006);
   |#LightGreen|Unity Simulation|
-  :Empfange Paket;
-  :Berechne Physik (ArticulationBody);
-  :Visualisiere Bewegung;
-else (real)
+  :Empfange Daten;
+  :Simuliere Bewegung;
+  :Visualisiere Ergebnis;
+else (nein)
 endif
 
-if (Modus?) then (real / both)
-  |#LightBlue|Digital Twin System (Python API)|
-  :Sende Serial (USB);
-  |#White|Physischer Roboter|
-  :Bewege Servos;
-else (virtual)
+if (Hardware aktiv?) then (ja)
+  |#LightBlue|Python API|
+  :Sende Befehle über Serial;
+  |#White|Roboter|
+  :Führe Bewegung aus;
+else (nein)
 endif
 
-|Benutzer (Student)|
+|Benutzer|
 :Analyse der Ergebnisse;
 stop
 @enduml
@@ -49,15 +49,27 @@ stop
 [cols="1,3", options="header"]
 |===
 | Akteur | Verantwortung im Prozess
-| **Benutzer** | Erstellt die Programmlogik und bewertet das Verhalten des Roboters in der Simulation oder an der Hardware.
-| **Python API** | Übernimmt die Orchestrierung, die Validierung der Parameter und die Kommunikation über die verschiedenen Protokolle.
-| **Unity Simulation** | Bietet die visuelle und physikalische Validierung der geplanten Bewegungsabläufe.
-| **Hardware** | Führt die validierten Befehle in der realen Welt aus.
+
+| **Benutzer**
+| Erstellt die Programmlogik und bewertet das Verhalten des Roboters in der Simulation oder auf der Hardware.
+
+| **Python API**
+| Dient als zentrale Schnittstelle (Fassade) zum System.
+Sie vereinfacht die Nutzung, prüft Eingaben und verteilt Befehle je nach Betriebsmodus an Simulation und/oder Hardware.
+
+| **Unity Simulation**
+| Stellt die Bewegung des Roboters visuell dar und ermöglicht das Testen von Szenarien.
+
+| **Hardware**
+| Führt die Befehle auf dem realen Roboter aus.
+
 |===
+
+---
 
 === Technical Context
 
-Der technische Kontext zeigt die Systemgrenzen und die spezifischen Kommunikationskanäle zwischen den Komponenten.
+Der technische Kontext zeigt die Systemgrenzen sowie die Kommunikationswege zwischen den einzelnen Komponenten.
 
 [plantuml, target="diagram-context-c4", format="png"]
 ----
@@ -66,16 +78,18 @@ Der technische Kontext zeigt die Systemgrenzen und die spezifischen Kommunikatio
 
 LAYOUT_WITH_LEGEND()
 
-Person(user, "Student / Forscher", "Nutzt die Python API zur Robotersteuerung")
-System_Boundary(dt_boundary, "Digital Twin Environment") {
-    System(python_api, "MyPalletizer Python API", "Steuerungs-Hub & Hardware-Abstraktion")
-    System(unity_sim, "Unity Simulation", "3D-Physik-Engine & Visualisierung")
-}
-System_Ext(robot, "MyPalletizer 260 M5", "Physischer Roboterarm")
+Person(user, "Benutzer", "Nutzt die Python API zur Steuerung")
 
-Rel(user, python_api, "schreibt Code / nutzt", "Python")
-Rel(python_api, unity_sim, "Steuerbefehle", "UDP / JSON (Port 5005/5006)")
-Rel(python_api, robot, "Motorbefehle / LED", "Serial / USB")
+System_Boundary(dt_boundary, "Digital Twin Environment") {
+    System(python_api, "Python API", "Zentrale Steuerung und Schnittstelle")
+    System(unity_sim, "Unity Simulation", "Visualisierung und Simulation")
+}
+
+System_Ext(robot, "MyPalletizer 260 M5", "Physischer Roboter")
+
+Rel(user, python_api, "nutzt", "Python")
+Rel(python_api, unity_sim, "Steuerbefehle", "UDP (Ports 5005 / 5006)")
+Rel(python_api, robot, "Steuerbefehle", "Serial (USB)")
 @enduml
 ----
 
@@ -84,8 +98,26 @@ Rel(python_api, robot, "Motorbefehle / LED", "Serial / USB")
 [cols="1,1,2", options="header"]
 |===
 | Schnittstelle | Protokoll | Zweck
-| **Benutzer-API** | Lokal (Python) | High-Level Funktionen wie `send_angles()`, `set_color()` oder `spawn_cube()`.
-| **Hardware-Kanal** | Serial (115200 Baud) | Übertragung von Low-Level Befehlen an die M5Stack-Firmware des Roboters.
-| **Simulations-Kanal** | UDP (v1 JSON) | Hochfrequente Übertragung von Soll-Zuständen an die Unity-Engine auf Port 5005.
-| **Welt-Kanal** | UDP (v1 JSON) | Übertragung von Umgebungsbefehlen auf Port 5006.
+
+| **Benutzer-API**
+| Lokal (Python)
+| Stellt Funktionen wie `send_angles()`, `set_color()` oder `spawn()` zur Verfügung.
+
+| **Hardware-Kanal**
+| Serial (115200 Baud)
+| Überträgt Steuerbefehle an den realen Roboter.
+
+| **Simulations-Kanal**
+| UDP (JSON)
+| Überträgt Bewegungs- und Zustandsbefehle an die Simulation (Port 5005).
+
+| **Welt-Kanal**
+| UDP (JSON)
+| Überträgt Befehle zur Verwaltung der Simulationsumgebung (Port 5006).
+
+| **Trennung der Kanäle**
+| -
+| Die Kommunikation zur Simulation ist in zwei Kanäle aufgeteilt.
+Der Roboterkanal ist für zeitkritische Bewegungsbefehle zuständig, während der Weltkanal für weniger häufige Aktionen wie das Erstellen oder Löschen von Objekten verwendet wird.
+
 |===

@@ -3,49 +3,93 @@ ifndef::imagesdir[:imagesdir: ../images]
 [[section-introduction-and-goals]]
 == Introduction and Goals
 
-Das Projekt **DigitalTwin for MyPalletizer 260 M5** zielt darauf ab, eine hochperformante und physikalisch akkurate Simulationsumgebung für den MyPalletizer-Roboterarm zu schaffen. Durch die Bereitstellung einer identischen Programmierschnittstelle für Hardware und Simulation wird der Lernprozess in der Robotik effizienter, sicherer und ortsunabhängiger gestaltet.
+Das Projekt *DigitalTwin for MyPalletizer 260 M5* hat zum Ziel, eine realitätsnahe und performante Simulationsumgebung für den MyPalletizer-Roboterarm bereitzustellen.
+
+Durch eine einheitliche Programmierschnittstelle für reale Hardware und Simulation kann derselbe Code in beiden Umgebungen verwendet werden. Dadurch wird das Lernen und Testen in der Robotik einfacher, sicherer und unabhängig vom Standort.
+
+Dies ermöglicht es Studierenden und Robotik-Interessierten, die Funktionsweise des MyPalletizer besser zu verstehen, Bewegungsabläufe zu entwickeln und verschiedene Szenarien zu testen, ohne die Hardware zu gefährden oder vor Ort sein zu müssen.
+
+Ein praktischer Hintergrund dafür ist, dass die Hochschule Luzern (HSLU) den MyPalletizer nur in einem Laborraum zur Verfügung stellt, der nicht jederzeit zugänglich ist. Zudem stehen lediglich zwei Roboter zur Verfügung, was die Nutzung zusätzlich einschränkt.
 
 === Functional Requirements
 
-Das System erfüllt die folgenden funktionalen Kernanforderungen:
+Das System erfüllt die folgenden funktionalen Anforderungen:
 
-* **Hybride Steuerung**: Nahtlose Umschaltung zwischen `virtual` (Simulation), `real` (Hardware) und `both` (Synchron) Betriebsmodi über eine zentrale Python-Klasse.
-* **Gelenksteuerung (Kinematik)**: 
-    - Präzise Vorgabe von Gelenkwinkeln für alle 4 Achsen des Roboters.
-    - Unterstützung von relativen und absoluten Bewegungen.
-    - Konfigurierbare Bewegungsgeschwindigkeit zur Anpassung an reale Hardware-Limits.
-* **End-Effektor-Simulation**:
-    - Steuerung eines parallelen Greifers (Öffnen/Schließen mit variablem Winkel).
-    - Simulation einer Vakuumpumpe inklusive physikalischem Ansaugen von Objekten über Trigger-Zonen.
-* **Dynamische Szenariengestaltung**:
-    - Echtzeit-Erzeugung (Spawn) und Löschung von 3D-Primitiven (Boxen, Kugeln) zur Laufzeit über Python.
-    - Zuweisung von physikalischen Eigenschaften (Masse, Reibung) und Farben an gespawnte Objekte.
-    - Speichern und Laden von Szenarien-Presets für reproduzierbare Experimente.
-* **Visuelles Feedback & Status**:
-    - Echtzeit-Darstellung der Roboterbewegung in Unity.
-    - Steuerung der am Roboterkopf befindlichen LED-Statusanzeige (RGB-Werte).
-    - Verschiedene Kameraperspektiven in Unity zur Analyse komplexer Bewegungsabläufe.
+* **Hybride Steuerung**
+  Umschaltung zwischen den Betriebsmodi `virtual` (Simulation), `real` (Hardware) und `both` (gleichzeitig) über eine zentrale Python-API.
+
+* **Gelenksteuerung (Kinematik)**
+  - Vorgabe von Gelenkwinkeln für alle 4 Achsen des Roboters
+  - Unterstützung von synchronen Bewegungen (mehrere Gelenke gleichzeitig)
+  - Einstellbare Bewegungsgeschwindigkeit zur Anpassung an die Hardware
+
+
+* **End-Effektor-Steuerung**
+  - Steuerung eines Greifers (Öffnen/Schliessen)
+  - Steuerung einer Vakuumpumpe
+  - Auswahl des aktiven Werkzeugs (Greifer oder Pumpe)
+
+* **Dynamische Szenariengestaltung**
+  - Erstellen (Spawn) und Löschen von Objekten zur Laufzeit über Python
+  - Unterstützung von einfachen 3D-Objekten (z. B. Box, Sphere, Cylinder)
+  - Zuweisung von Position, Rotation, Skalierung und Farbe
+  - Laden von vordefinierten Szenarien (Presets)
+
+* **Visuelles Feedback & Status**
+  - Darstellung der Roboterbewegung in der Unity-Simulation
+  - Steuerung der LED (RGB) am Roboter
+  - Darstellung der Szene aus verschiedenen Kameraperspektiven in Unity
+
+---
 
 === Quality Goals
 
-Die Architektur orientiert sich an den folgenden Qualitätszielen (angelehnt an ISO 25010):
+Die Architektur orientiert sich an folgenden Qualitätszielen:
 
 [cols="1,2,3", options="header"]
 |===
 | Ziel | Szenario | Maßnahme
-| **Latenzoptimierung** | Ein Bewegungsbefehl muss in < 50ms visuell umgesetzt werden. | Nutzung von UDP (User Datagram Protocol) und Multithreaded Empfangslogik in Unity, um Rendering-Latenzen zu vermeiden.
-| **Hardware-Treue** | Die Simulation muss physikalische Gelenklimits und Geschwindigkeiten einhalten. | Einsatz von Unity Articulation Bodies mit PID-Regelung und Kalibrierung gegen CAD-Daten.
-| **Wartbarkeit** | Neue End-Effektoren (z.B. Kamera-Aufsätze) sollen leicht integrierbar sein. | Modularer Aufbau durch Adapter-Patterns und klare Trennung von Protokoll-Logik und Hardware-Abstraktion.
-| **Portabilität** | Die Software muss auf Windows, Linux und macOS identisch funktionieren. | Einsatz von plattformunabhängigen Engines (Python 3.12 / Unity 6).
+
+| **Latenz**
+| Ein Bewegungsbefehl soll möglichst schnell in der Simulation sichtbar sein (< 50 ms).
+| Verwendung von UDP für schnelle, verbindungslose Kommunikation.
+
+| **Realitätsnähe**
+| Die Simulation soll sich ähnlich wie der reale Roboter verhalten.
+| Begrenzung der Gelenkwinkel und Geschwindigkeiten entsprechend der Hardware.
+
+| **Wartbarkeit**
+| Neue Funktionen oder Tools sollen einfach ergänzt werden können.
+| Klare Trennung zwischen Robot- und World-Logik sowie modulare Klassenstruktur.
+
+| **Portabilität**
+| Das System soll auf verschiedenen Betriebssystemen laufen.
+| Einsatz von Python und Unity als plattformunabhängige Technologien.
+
 |===
+
+---
 
 === Stakeholders
 
 [cols="1,2,2", options="header"]
 |===
 | Stakeholder | Rolle | Interessen / Erwartungen
-| **Studierende (HSLU)** | Endnutzer | Einfache Installation ("Zero-Config"), intuitive Python-API, fehlerverzeihende Simulationsumgebung (kein Hardware-Schaden bei Fehlern).
-| **Dozierende (APPLAI Modul)** | Auftraggeber / Prüfer | Verlässliches Tool für die Lehre, einfache Korrektur von Studentenprojekten ohne Hardware-Zwang, hohe Reproduzierbarkeit von Ergebnissen.
-| **Robotik-Enthusiasten** | Externe Nutzer | Open-Source Verfügbarkeit, gute Dokumentation zur Erweiterung auf eigene Szenarien.
-| **Entwickler (Colin Felber)** | Architekt | Klare Strukturierung zur Minimierung von technischer Schuld, Dokumentation als Leistungsnachweis für das Studium.
+
+| **Studierende (HSLU)**
+| Endnutzer
+| Einfache Nutzung, verständliche API, sichere Umgebung zum Testen ohne Risiko für die Hardware
+
+| **Dozierende (Prof. Dr. Jana Koehler)**
+| Auftraggeber / Prüfer
+| Zuverlässiges Tool für Übungen und Projekte, einfache Reproduzierbarkeit
+
+| **Robotik-Interessierte**
+| Externe Nutzer
+| Gute Dokumentation, einfache Erweiterbarkeit, Open-Source Nutzung
+
+| **Entwickler (Colin Felber)**
+| Architekt
+| Klare Struktur, wartbarer Code, saubere Dokumentation als Teil der Studienleistung
+
 |===
