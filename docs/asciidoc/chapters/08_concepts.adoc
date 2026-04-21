@@ -7,46 +7,11 @@ In diesem Kapitel werden Konzepte beschrieben, die in mehreren Teilen des System
 
 === Simulationskonzept
 
-Die Simulation des Roboters wird in Unity umgesetzt. Dabei besteht der Roboter aus mehreren miteinander verbundenen Gelenken, sodass die Bewegung als kinematische Kette dargestellt werden kann.
+Die Simulation des Roboters wird in Unity umgesetzt. Dabei besteht der Roboter aus mehreren miteinander verbundenen Gelenken, sodass die Untergeliederten Bauteile (z.B. J3) sich mitbewegen, wenn das übergeordnete Gelenk (z.B. J2) bewegt wird.
 
-[plantuml, target="diagram-kinematic-chain", format="png"]
-----
-@startuml
-skinparam componentStyle rectangle
-
-package "Kinematische Kette" {
-    [Base] --> [J1]
-    [J1] --> [J2]
-    [J2] --> [J3]
-    [J3] --> [J4]
-    [J4] --> [End-Effektor]
-}
-@enduml
-----
+image::Joints.png[]
 
 Die Trennung in einzelne Gelenke ermöglicht es, Bewegungsbefehle aus der Python-Anwendung direkt auf die simulierte Roboterstruktur abzubilden. Dadurch können Zielwinkel für die einzelnen Achsen unabhängig verarbeitet und in der Simulation dargestellt werden.
-
-=== Moduskonzept
-
-Das System unterstützt drei verschiedene Betriebsmodi:
-
-* **virtual** – Ausführung nur in der Simulation
-* **real** – Ausführung nur auf dem realen Roboter
-* **both** – Ausführung gleichzeitig in Simulation und Hardware
-
-Dieses Konzept ist zentral, da dieselbe Python-API in allen drei Fällen verwendet werden kann. Die Unterscheidung, wohin ein Befehl gesendet wird, erfolgt intern im System.
-
-=== Konzept zur Trennung von Robot und World
-
-Auf Python-Seite ist die Funktionalität bewusst in zwei Bereiche aufgeteilt:
-
-* **Robot**
-* **World**
-
-`Robot` ist für Bewegungen, Werkzeuge und LED-Funktionen zuständig.
-`World` verwaltet die Simulationsumgebung, also zum Beispiel das Erzeugen, Löschen und Zurücksetzen von Objekten.
-
-Dies verbessert die Übersichtlichkeit und verhindert, dass sich Robotersteuerung und Weltverwaltung unnötig vermischen.
 
 === End-Effektor-Konzept
 
@@ -70,7 +35,7 @@ Dieses Konzept sorgt dafür, dass verschiedene Werkzeugarten über dieselbe Schn
 
 Für die Simulationswelt werden einfache Objekte wie Boxen, Kugeln oder Zylinder verwendet. Diese können über die Python-Seite erstellt und in Unity dargestellt werden.
 
-Zusätzlich unterstützt das System vordefinierte Szenarien (*Presets*), damit typische Testfälle schnell geladen werden können. Dadurch lassen sich wiederholbare Experimente und Demonstrationen einfacher durchführen.
+Zusätzlich unterstützt das System vordefinierte Szenarien (*Presets*), welches ein einfacherer Einstieg in die Nutzung ermöglicht.
 
 Objekte werden dabei über ihren Namen angesprochen. So können sie später gezielt gelöscht oder verändert werden.
 
@@ -87,19 +52,8 @@ Dazu gehören unter anderem:
 
 Dadurch werden fehlerhafte Befehle möglichst früh erkannt und unzulässige Zustände vermieden.
 
-=== Bereitstellungskonzept
-
-Die Software wird über eine CI/CD-Pipeline automatisiert gebaut. Für die unterstützten Betriebssysteme werden Artefakte bereitgestellt, sodass Benutzer die passende Version direkt herunterladen und starten können.
-
-Zusätzlich bleibt das Unity-Projekt zugänglich, damit die Simulation bei Bedarf weiterentwickelt oder angepasst werden kann.
-
 === Testkonzept
 
-Die Qualität des Systems wurde vor allem durch funktionale Tests überprüft. Dazu gehören insbesondere:
+Das Testkonzept umfasst sowhol Unit-Tests für die Python-API als auch für die Unity-Komponenten. Dabei werden typische Anwendungsfälle, Grenzfälle und Fehlerfälle abgedeckt, um die Stabilität und Zuverlässigkeit des Systems sicherzustellen.
 
-* Testen der Kommunikation zwischen Python und Unity
-* Testen der verschiedenen Betriebsmodi (`virtual`, `real`, `both`)
-* Testen der Roboterbewegungen und Werkzeugfunktionen
-* Testen der Weltbefehle wie `spawn`, `delete` und `clear`
-
-Zusätzlich wurde die Simulation visuell überprüft, um sicherzustellen, dass Bewegungen und Objektinteraktionen plausibel dargestellt werden.
+Zudem wurden auch Systemtests implementiert, die Manuell ausgeführt wurden. Diese Tests decken auch die Interaktion zwischen Python und Unity ab, um sicherzustellen, dass die Kommunikation korrekt funktioniert und die Simulation wie erwartet reagiert. Dabei wurden diese im Github-Wiki dokumentiert, damit sie auch von anderen Benutzern nachvollzogen werden können https://github.com/Stonehouse1703/DigitalTwin-for-MyPalletizer-260-M5-UnityVersion/wiki/system-tests[LINK].

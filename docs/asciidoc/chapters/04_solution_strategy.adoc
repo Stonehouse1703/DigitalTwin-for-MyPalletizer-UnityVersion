@@ -85,12 +85,20 @@ Simulation in Unity oder reale Ausführung auf dem Roboter.
 
 ---
 
-=== Strategie zur Welt-Manipulation
+=== Strategie zur Kommunikationstrennung
 
-Die Verwaltung der Simulationswelt (z. B. Erzeugen oder Löschen von Objekten) wurde bewusst von der Robotersteuerung getrennt.
+Die Kommunikation zwischen Python und Unity erfolgt über zwei getrennte UDP-Ports. Dabei wird
+Port 5005 für Roboterbefehle wie Gelenkbewegungen, Werkzeugbefehle und LED-Steuerung verwendet,
+während Port 5006 für Befehle zur Verwaltung der Simulationswelt eingesetzt wird, beispielsweise
+für `spawn`, `delete` oder `clear`. Diese Ports sind standardmässig festgelegt, können aber bei Bedarf angepasst werden.
 
-Während Roboterbewegungen als kontinuierlicher Datenstrom betrachtet werden, sind Änderungen an der Welt einzelne, diskrete Aktionen.
+Diese Trennung wurde bewusst gewählt, da beide Kommunikationsarten unterschiedliche Anforderungen
+haben. Roboterbefehle treten häufig auf und sind zeitkritisch, da Bewegungen möglichst flüssig und
+ohne Verzögerung in der Simulation sichtbar werden sollen. Befehle zur Weltverwaltung sind dagegen
+seltener und eher diskrete Einzelaktionen. Durch die Aufteilung auf zwei getrennte Kanäle wird
+verhindert, dass grössere oder unregelmässige Weltnachrichten die kontinuierliche Übertragung der
+Roboterbefehle beeinflussen.
 
-Aus diesem Grund wird für die Welt-Manipulation ein separater UDP-Port (5006) verwendet, während die Robotersteuerung über einen eigenen Kanal (5005) läuft.
-
-Diese Trennung verhindert, dass grössere Nachrichten für Weltänderungen die kontinuierliche Übertragung von Bewegungsdaten beeinflussen und sorgt für eine klarere Struktur der Kommunikation.
+Zusätzlich verbessert diese Trennung die Struktur des Systems, da Robotersteuerung und
+Weltverwaltung auch konzeptionell als zwei unterschiedliche Aufgabenbereiche behandelt werden.
+Dadurch bleibt die Architektur klarer, leichter erweiterbar und einfacher zu warten.

@@ -144,7 +144,7 @@ Dieser Modus eignet sich besonders für Demonstrationen und für den direkten Ve
 
 === Szenario 4: Verwaltung der Simulationswelt
 
-Neben der Robotersteuerung unterstützt das System auch Änderungen an der Simulationswelt. Diese laufen bewusst getrennt von der Robotersteuerung ab und verwenden einen eigenen UDP-Port (`5006`).
+Neben der Robotersteuerung unterstützt das System auch Änderungen an der Simulationswelt.
 
 [plantuml, target="diagram-runtime-world", format="png"]
 ----
@@ -177,37 +177,4 @@ Ablauf:
 5. Dieser aktualisiert die Unity-Szene und erzeugt, löscht oder leert Objekte.
 
 Die Trennung zwischen Roboter- und Weltkanal ist wichtig, damit häufige Bewegungsbefehle und seltenere Weltänderungen unabhängig voneinander verarbeitet werden können.
-
-=== Szenario 5: Synchrone Gelenkbewegung
-
-Neben der asynchronen Bewegung unterstützt das System auch `sync_move_joints(...)`. Dabei wird ebenfalls ein kompletter Satz von Zielwinkeln übertragen, jedoch mit der Absicht, dass die Bewegung als gemeinsamer, koordinierter Vorgang ausgeführt wird.
-
-[plantuml, target="diagram-runtime-sync", format="png"]
-----
-@startuml
-participant "Benutzer /\nPython-Skript" as User
-participant "Robot" as Robot
-participant "MyPalletizerController" as MPC
-participant "Unity Simulation" as Unity
-participant "pymycobot /\nRealer Roboter" as HW
-
-User -> Robot: sync_move_joints(...)
-Robot -> MPC: delegiert Befehl
-
-alt Modus = virtual
-  MPC -> Unity: UDP JSON {type=sync_move_joints}
-  Unity -> Unity: Simuliert synchrone Gelenkbewegung
-else Modus = real
-  MPC -> HW: sync_send_angles(...)
-  HW -> HW: Führt Bewegung aus
-else Modus = both
-  MPC -> Unity: UDP JSON {type=sync_move_joints}
-  MPC -> HW: sync_send_angles(...)
-  Unity -> Unity: Simuliert Bewegung
-  HW -> HW: Führt Bewegung aus
-end
-@enduml
-----
-
-Dieses Szenario ist vor allem dann relevant, wenn mehrere Gelenke koordiniert gemeinsam bewegt werden sollen.
 

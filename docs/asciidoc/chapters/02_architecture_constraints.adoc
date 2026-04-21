@@ -47,7 +47,7 @@ Es wird keine spezialisierte Hardware vorausgesetzt.
   Die Entwicklung erfolgt im Rahmen eines Semesters im Modul APPLAI.
 
 * **Verfügbarkeit der Hardware**
-  Der reale Roboter steht nur eingeschränkt im Labor zur Verfügung.
+  Die realen Roboter steht nur eingeschränkt Stückzahl im Labor zur Verfügung.
   Dies war ein zentraler Treiber für die Entwicklung der Simulation.
 
 * **Nutzergruppe**

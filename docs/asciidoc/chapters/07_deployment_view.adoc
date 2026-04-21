@@ -39,9 +39,9 @@ Der Host-PC benötigt folgende Softwarekomponenten:
 
 Die Software wird über eine CI/CD-Pipeline automatisiert gebaut. Dabei werden für die unterstützten Betriebssysteme jeweils Artefakte erstellt.
 
-Dadurch kann der Benutzer die passende Version für sein Betriebssystem direkt herunterladen und starten, ohne die Anwendung selbst bauen zu müssen.
+Dadurch kann der Benutzer die passende Version für sein Betriebssystem direkt herunterladen und starten, ohne die Anwendung selbst bauen zu müssen. Dies vereinfacht die Nutzung erheblich und ermöglicht einen schnellen Einstieg, insbesondere für Anwender die keine Unity-Vorkenntnisse haben.
 
-Falls Änderungen an der Simulation vorgenommen werden sollen, kann zusätzlich das Unity-Projekt geöffnet und direkt weiterbearbeitet werden.
+Falls der Benutzer die Simulation anpassen oder erweitern möchte, bleibt das Unity-Projekt zugänglich. Es kann mit einer kostenlosen Unity-Version geöffnet und bearbeitet werden um die Simulation nach eigenen Bedürfnissen zu verändern.
 
 === MyPalletizer 260 M5
 
@@ -60,3 +60,5 @@ Das System kann in drei Varianten betrieben werden:
 * **virtual** – nur Simulation
 * **real** – nur realer Roboter
 * **both** – Simulation und realer Roboter gleichzeitig
+
+Diese Flexibilität ermöglicht es, das System an die jeweiligen Bedürfnisse und Ressourcen anzupassen. So kann beispielsweise auch ohne Zugriff auf die Hardware die Entwicklung und das Testen von Bewegungsabläufen in der Simulation erfolgen.

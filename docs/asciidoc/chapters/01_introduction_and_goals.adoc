@@ -16,12 +16,12 @@ Ein praktischer Hintergrund dafür ist, dass die Hochschule Luzern (HSLU) den My
 Das System erfüllt die folgenden funktionalen Anforderungen:
 
 * **Hybride Steuerung**
-  Umschaltung zwischen den Betriebsmodi `virtual` (Simulation), `real` (Hardware) und `both` (gleichzeitig) über eine zentrale Python-API.
+  Umschaltung zwischen den Betriebsmodi `virtual` (Simulation), `real` (Hardware) und `both` (gleichzeitig) über eine zentrale Python-API. Dies wird im Kapitel <<_betriebsarten, Betriebsarten>> näher beschrieben.
 
 * **Gelenksteuerung (Kinematik)**
   - Vorgabe von Gelenkwinkeln für alle 4 Achsen des Roboters
   - Unterstützung von synchronen Bewegungen (mehrere Gelenke gleichzeitig)
-  - Einstellbare Bewegungsgeschwindigkeit zur Anpassung an die Hardware
+  - Einstellbare Bewegungsgeschwindigkeit
 
 
 * **End-Effektor-Steuerung**
@@ -33,7 +33,7 @@ Das System erfüllt die folgenden funktionalen Anforderungen:
   - Erstellen (Spawn) und Löschen von Objekten zur Laufzeit über Python
   - Unterstützung von einfachen 3D-Objekten (z. B. Box, Sphere, Cylinder)
   - Zuweisung von Position, Rotation, Skalierung und Farbe
-  - Laden von vordefinierten Szenarien (Presets)
+  - Laden von vordefinierten Szenarien (Presets), siehe Kapitel <<_objekt_und_szenarienkonzept, Objekt- und Szenarienkonzept>>
 
 * **Visuelles Feedback & Status**
   - Darstellung der Roboterbewegung in der Unity-Simulation
@@ -81,7 +81,7 @@ Die Architektur orientiert sich an folgenden Qualitätszielen:
 | Einfache Nutzung, verständliche API, sichere Umgebung zum Testen ohne Risiko für die Hardware
 
 | **Dozierende (Prof. Dr. Jana Koehler)**
-| Auftraggeber / Prüfer
+| Auftraggeberin / Prüferin
 | Zuverlässiges Tool für Übungen und Projekte, einfache Reproduzierbarkeit
 
 | **Robotik-Interessierte**
@@ -89,7 +89,7 @@ Die Architektur orientiert sich an folgenden Qualitätszielen:
 | Gute Dokumentation, einfache Erweiterbarkeit, Open-Source Nutzung
 
 | **Entwickler (Colin Felber)**
-| Architekt
+| Entwickler
 | Klare Struktur, wartbarer Code, saubere Dokumentation als Teil der Studienleistung
 
 |===

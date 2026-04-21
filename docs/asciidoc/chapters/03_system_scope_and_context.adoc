@@ -118,7 +118,7 @@ Rel(python_api, robot, "Steuerbefehle", "Serial (USB)")
 | **Trennung der Kanäle**
 | -
 | Die Kommunikation zur Simulation ist in zwei Kanäle aufgeteilt.
-Der Roboterkanal ist für zeitkritische Bewegungsbefehle zuständig, während der Weltkanal für weniger häufige Aktionen wie das Erstellen oder Löschen von Objekten verwendet wird.
+Der Roboterkanal ist für zeitkritische Bewegungsbefehle zuständig, während der Weltkanal für weniger häufige Aktionen wie das Erstellen oder Löschen von Objekten verwendet wird. Genauere Details für diesen Entscheid folgen im Kapitel <<_strategie_zur_kommunikationstrennung, Strategie zur Kommunikationstrennung>>.
 
 |===
 

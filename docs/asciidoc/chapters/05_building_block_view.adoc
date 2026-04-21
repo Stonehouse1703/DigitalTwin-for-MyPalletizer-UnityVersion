@@ -40,7 +40,7 @@ Rel(python_layer, real_robot, "steuert", "Serial / USB")
 | **Unity Simulation Layer**
 | Empfängt Befehle aus Python und setzt diese in simulierte Bewegungen, Werkzeugfunktionen und Änderungen der Simulationswelt um.
 
-| **Realer Roboter**
+| **Realer Roboter (MyPalletizer 260 M5)**
 | Führt Befehle auf der physischen Hardware aus. Die Ansteuerung erfolgt über die Herstellerbibliothek `pymycobot`.
 
 |===
@@ -80,16 +80,16 @@ MPC --> PyMyCobot : steuert reale Hardware
 | Baustein | Beschreibung
 
 | **Robot**
-| Benutzernahe API für die Robotersteuerung. Diese Klasse kapselt die Nutzung des Controllers und bietet einfache Methoden wie `send_angles()`, `send_angle()`, `sync_move_joints()`, `set_color()`, `set_end_effector()`, `set_gripper_state()`, `pump_on()` und `pump_off()`. Zudem validiert sie die Grundkonfiguration, z. B. den benötigten Serial-Port in den Modi `real` und `both`.
+| Benutzernahe API für die Robotersteuerung. Diese Klasse kapselt die Nutzung des Controllers und bietet einfache Methoden wie zum Beispiel `send_angles()`, `sync_move_joints()`, `set_color()` `set_gripper_state()`, und `pump_on()`. Zudem validiert sie die Grundkonfiguration, z. B. den benötigten Serial-Port in den Modi `real` und `both`.
 
 | **MyPalletizerController**
 | Zentrale Steuerkomponente für den Roboter. Diese Klasse entscheidet anhand des Modus `virtual`, `real` oder `both`, ob ein Befehl an die Simulation, an den realen Roboter oder an beide weitergeleitet wird. Zusätzlich begrenzt sie Gelenkwinkel und Geschwindigkeit und verwaltet den aktuellen Simulationszustand der Gelenke.
 
 | **World**
-| API für die Verwaltung der Simulationswelt. Diese Klasse ist getrennt von der Robotersteuerung und bietet Funktionen wie `spawn()`, `delete()`, `clear()`, `list_presets()` und `load_preset()`.
+| API für die Verwaltung der Simulationswelt. Diese Klasse ist getrennt von der Robotersteuerung und bietet Funktionen wie zum Beipsiel `spawn()`, `delete()` und `load_preset()`.
 
 | **protocol**
-| Hilfsmodul zum Aufbau der JSON-Nachrichten. Es definiert sowohl Roboterbefehle wie `move_joints`, `sync_move_joints`, `led`, `set_end_effector`, `set_gripper_state` und `pump` als auch Weltbefehle wie `spawn`, `delete` und `clear`.
+| Hilfsmodul zum Aufbau der JSON-Nachrichten. Es definiert sowohl Roboterbefehle wie zum Beispiel `move_joints`, `led` und `pump` als auch Weltbefehle wie `spawn` und `delet`.
 
 | **presets**
 | Enthält vordefinierte Szenarien für die Simulation, z. B. `empty`, `three_blocks`, `pick_and_place_basic` und `sorting_task`.
@@ -104,7 +104,7 @@ MPC --> PyMyCobot : steuert reale Hardware
 
 ===== Architekturidee der Python-Schicht
 
-Die Python-Schicht trennt bewusst zwischen Robotersteuerung und Weltverwaltung. `Robot` und `World` bilden zwei eigenständige Zugriffspunkte für den Benutzer. Intern übernimmt `MyPalletizerController` die eigentliche Orchestrierung der Roboterbefehle, während `World` einen separaten Kommunikationsweg für Weltänderungen verwendet.
+Wie schon im Kapitel <_strategie_zur_kommunikationstrennung, Strategie zur Kommunikationstrennung>> beschrieben, trennt die Python-Schicht und Unity-Schicht bewusst zwischen Robotersteuerung und Weltverwaltung. `Robot` und `World` bilden zwei eigenständige Zugriffspunkte für den Benutzer. Intern übernimmt `MyPalletizerController` die eigentliche Orchestrierung der Roboterbefehle, während `World` einen separaten Kommunikationsweg für Weltänderungen verwendet.
 
 Dadurch ergibt sich eine klare Aufteilung:
 
@@ -160,10 +160,6 @@ WUB --> WSM : spawn / delete / clear
 | Verarbeitet die Weltbefehle `spawn`, `delete` und `clear`. Er erstellt Objekte, entfernt sie wieder oder setzt die Szene zurück.
 
 |===
-
-===== Architekturidee der Unity-Schicht
-
-Die Unity-Schicht trennt die Simulation des Roboters von der Verwaltung der Welt. Dies wurde bereits im Kapitel <<_externe_schnittstellen, externe Schnittstellen>>  erläutert.
 
 === Level 3
 
