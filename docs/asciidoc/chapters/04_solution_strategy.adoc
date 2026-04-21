@@ -3,33 +3,94 @@ ifndef::imagesdir[:imagesdir: ../images]
 [[section-solution-strategy]]
 == Solution Strategy
 
-Die Lösungsstrategie basiert auf einer strikten Trennung zwischen der logischen Steuerungsebene (Python) und der physikalischen Darstellungsebene (Unity).
+Die Lösungsstrategie basiert auf einer klaren Trennung zwischen der Steuerlogik (Python) und der visuellen bzw. physikalischen Darstellung (Unity).
+
+---
 
 === Architekturelle Leitprinzipien
 
-1. **Einheitliche Abstraktion**: Der Benutzer soll nicht wissen müssen, ob er gerade eine Simulation oder Hardware steuert. Alle modusspezifischen Unterschiede werden innerhalb des `MyPalletizerController` gekapselt.
-2. **Entkopplung durch Netzwerkschnittstellen**: Die Nutzung von UDP ermöglicht es, Steuerlogik und Visualisierung auf verschiedenen Rechnern oder in verschiedenen Prozessen laufen zu lassen. Dies schützt den Python-Prozess vor Performance-Schwankungen der 3D-Engine.
-3. **Zustandslosigkeit des Protokolls**: Jedes UDP-Paket enthält den vollständigen Soll-Zustand (z.B. alle 4 Gelenkwinkel). Dies macht die Kommunikation robust gegenüber Paketverlusten, da das nächste Paket den Zustand automatisch korrigiert.
+1. **Einheitliche Abstraktion**
+   Der Benutzer soll nicht unterscheiden müssen, ob er die Simulation oder die reale Hardware steuert.
+   Alle modusspezifischen Unterschiede (`virtual`, `real`, `both`) werden intern im System gekapselt.
+
+2. **Entkopplung durch Netzwerkschnittstellen**
+   Durch die Verwendung von UDP laufen Steuerlogik (Python) und Simulation (Unity) unabhängig voneinander.
+   Dadurch wird verhindert, dass Performance-Schwankungen der 3D-Engine die Steuerlogik beeinflussen.
+
+3. **Zustandsbasierte Kommunikation**
+   Jedes UDP-Paket enthält den vollständigen Soll-Zustand (z. B. alle Gelenkwinkel).
+   Dadurch kann ein verlorenes Paket durch das nächste automatisch korrigiert werden.
+
+---
 
 === Entscheidungen zur Kommunikation
 
 * **Warum UDP statt TCP?**
-  In einer Echtzeit-Simulation ist Aktualität wichtiger als Vollständigkeit. Ein verloren gegangenes Paket ist unkritisch, da Millisekunden später ein neues Paket mit dem aktuellen Zustand folgt. TCP-Retransmissions würden hier zu unerwünschten "Sprüngen" und Latenzen führen.
+  In diesem System ist eine geringe Latenz wichtiger als eine garantierte Zustellung.
+  Ein verlorenes Paket ist unkritisch, da kurze Zeit später ein neues Paket mit aktuellen Daten gesendet wird.
+  TCP würde durch Wiederholungen (Retransmissions) zu Verzögerungen führen.
+
 * **Warum JSON?**
-  JSON bietet eine hervorragende Balance zwischen Lesbarkeit (Debugging) und Performance. Da die Datenmenge pro Paket (ca. 200 Bytes) sehr gering ist, überwiegen die Vorteile der einfachen Implementierung in C# und Python gegenüber binären Formaten wie Protobuf.
+  JSON ist einfach zu implementieren und gut lesbar, was das Debugging erleichtert.
+  Da die Datenmenge pro Nachricht klein ist, überwiegen diese Vorteile gegenüber binären Formaten.
+
+---
 
 === Schichtenmodell
+
+[plantuml, target="diagram-solution-strategy", format="png"]
+----
+@startuml
+skinparam rectangle {
+    RoundCorner 15
+}
+
+actor Benutzer
+
+rectangle "User Logic\n(Python Script)" as UserLogic
+rectangle "Python API\n(Facade / Controller)" as API
+rectangle "Transport Layer\n(JSON / UDP / Serial)" as Transport
+
+rectangle "Unity Simulation" as Unity
+rectangle "Realer Roboter" as Robot
+
+Benutzer --> UserLogic
+UserLogic --> API
+API --> Transport
+
+Transport --> Unity : UDP (5005/5006)
+Transport --> Robot : Serial
+
+@enduml
+----
 
 [cols="1,2", options="header"]
 |===
 | Schicht | Verantwortung
-| **User Logic** | Das Python-Skript des Studenten. Enthält die Pfadplanung oder KI-Logik.
-| **Controller Layer** | Die `mypalletizer`-Library. Handhabt die Verteilung auf Serial/UDP und validiert Gelenklimits.
-| **Transport Layer** | JSON Serialisierung und UDP/Serial Dispatching.
-| **Execution Layer** | Unity Articulation Bodies (Simulation) oder Robot Firmware (Hardware).
+
+| **User Logic**
+| Python-Skript des Benutzers. Enthält z. B. Bewegungslogik oder Szenarien.
+
+| **API / Controller Layer**
+| Zentrale Schnittstelle des Systems. Kapselt die Nutzung von `pymycobot`, validiert Eingaben und entscheidet, ob Befehle an Simulation, Hardware oder beide gesendet werden.
+
+| **Transport Layer**
+| Verantwortlich für die Übertragung der Daten (JSON, UDP, Serial).
+
+| **Execution Layer**
+| Führt die Befehle aus:
+Simulation in Unity oder reale Ausführung auf dem Roboter.
+
 |===
+
+---
 
 === Strategie zur Welt-Manipulation
 
-Die Welt-Manipulation (Spawning von Objekten) wurde bewusst auf einen separaten Port (5006) ausgelagert. Während Roboterbewegungen als kontinuierlicher Stream (Stream-orientiert) betrachtet werden, sind Welt-Anderungen diskrete Ereignisse (Event-orientiert). Diese Trennung verhindert, dass ein großes JSON-Paket für eine Welt-Änderung den Fluss der Bewegungsdaten unterbricht.
+Die Verwaltung der Simulationswelt (z. B. Erzeugen oder Löschen von Objekten) wurde bewusst von der Robotersteuerung getrennt.
 
+Während Roboterbewegungen als kontinuierlicher Datenstrom betrachtet werden, sind Änderungen an der Welt einzelne, diskrete Aktionen.
+
+Aus diesem Grund wird für die Welt-Manipulation ein separater UDP-Port (5006) verwendet, während die Robotersteuerung über einen eigenen Kanal (5005) läuft.
+
+Diese Trennung verhindert, dass grössere Nachrichten für Weltänderungen die kontinuierliche Übertragung von Bewegungsdaten beeinflussen und sorgt für eine klarere Struktur der Kommunikation.
