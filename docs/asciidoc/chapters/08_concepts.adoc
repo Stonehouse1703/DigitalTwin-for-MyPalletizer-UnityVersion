@@ -26,19 +26,6 @@ package "Kinematische Kette" {
 
 Die Trennung in einzelne Gelenke ermöglicht es, Bewegungsbefehle aus der Python-Anwendung direkt auf die simulierte Roboterstruktur abzubilden. Dadurch können Zielwinkel für die einzelnen Achsen unabhängig verarbeitet und in der Simulation dargestellt werden.
 
-=== Kommunikationskonzept
-
-Ein zentrales Konzept des Systems ist die Trennung zwischen Robotersteuerung und Weltverwaltung.
-
-Für die Kommunikation zwischen Python und Unity werden deshalb zwei getrennte UDP-Schnittstellen verwendet:
-
-* **Port 5005** für Roboterbefehle
-* **Port 5006** für Weltbefehle
-
-Diese Trennung sorgt dafür, dass Bewegungsbefehle des Roboters nicht mit Befehlen zur Änderung der Simulationswelt vermischt werden.
-
-Die Nachrichten werden im JSON-Format übertragen. Dadurch ist das Protokoll einfach lesbar und leicht erweiterbar.
-
 === Moduskonzept
 
 Das System unterstützt drei verschiedene Betriebsmodi:

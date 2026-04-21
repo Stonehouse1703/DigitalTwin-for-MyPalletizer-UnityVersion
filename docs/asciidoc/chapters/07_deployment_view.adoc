@@ -35,25 +35,6 @@ Der Host-PC benötigt folgende Softwarekomponenten:
 * **USB-Seriell-Verbindung**
   Wird benötigt, wenn der reale Roboter verwendet werden soll.
 
-=== Kommunikation
-
-Die Kommunikation zwischen Python und Unity erfolgt lokal über UDP.
-
-[cols="1,2", options="header"]
-|===
-| Element | Beschreibung
-
-| **Port 5005**
-| Wird für Roboterbefehle verwendet, zum Beispiel für Gelenkbewegungen, Werkzeugbefehle oder LED-Steuerung.
-
-| **Port 5006**
-| Wird für Befehle zur Verwaltung der Simulationswelt verwendet, zum Beispiel `spawn`, `delete` oder `clear`.
-
-| **USB / Serial**
-| Verbindung zwischen Python-Anwendung und realem Roboter.
-
-|===
-
 === Bereitstellung
 
 Die Software wird über eine CI/CD-Pipeline automatisiert gebaut. Dabei werden für die unterstützten Betriebssysteme jeweils Artefakte erstellt.

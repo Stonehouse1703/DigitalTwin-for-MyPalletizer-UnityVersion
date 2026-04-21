@@ -5,14 +5,10 @@
 :toc-title: Inhaltsverzeichnis
 :numbered:
 
-image::tittle.webp[]
+image::title.png[]
 
 == Abstract
 Dieses Dokument beschreibt die Architektur des digitalen Zwillings für den MyPalletizer 260 M5. Das System ermöglicht die hybride Steuerung von Hardware und Simulation über eine einheitliche Python-Schnittstelle. Es dient primär Ausbildungszwecken an der Hochschule Luzern (HSLU).
-
-<<<
-== Abbildungsverzeichnis
-list::figure[]
 
 <<<
 // 1. Introduction and Goals

@@ -23,13 +23,7 @@ Dies erfordert eine Implementierung der Kommunikationslogik in **C#** sowie die 
 | Die Ansteuerung des realen Roboters erfolgt über eine **serielle Schnittstelle (USB)** mit einer Baudrate von 115200.
 
 | **Kommunikation (Simulation)**
-| Die Kommunikation zwischen Python (Steuerlogik) und Unity (Simulation) erfolgt über **UDP**.
-Dabei werden strukturierte Nachrichten im JSON-Format übertragen.
-
-| **Getrennte UDP-Schnittstellen**
-| Für die Simulation werden zwei separate UDP-Ports verwendet:
-Port 5005 für die Robotersteuerung und Port 5006 für die Verwaltung der Simulationswelt.
-Dies ermöglicht eine klare Trennung zwischen zeitkritischen Bewegungsbefehlen und weniger kritischen Weltaktionen.
+| Die Kommunikation zwischen Python und Unity erfolgt über UDP mit JSON-basierten Nachrichten, welche im Kapitel <<_externe_schnittstellen, Externe Schnittstellen>> näher beschrieben werden.
 
 | **Prozess-Trennung**
 | Steuerlogik (Python) und Simulation (Unity) laufen in getrennten Prozessen.

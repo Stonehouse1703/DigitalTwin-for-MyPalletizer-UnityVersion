@@ -163,10 +163,7 @@ WUB --> WSM : spawn / delete / clear
 
 ===== Architekturidee der Unity-Schicht
 
-Die Unity-Schicht trennt die Simulation des Roboters von der Verwaltung der Welt. Das ist sinnvoll, da Roboterbewegungen häufig und zeitkritisch auftreten, während Weltänderungen eher seltene Einzelereignisse sind. Deshalb existieren auch zwei getrennte UDP-Ports:
-
-* **Port 5005** für Roboterbefehle
-* **Port 5006** für Weltbefehle
+Die Unity-Schicht trennt die Simulation des Roboters von der Verwaltung der Welt. Dies wurde bereits im Kapitel <<_externe_schnittstellen, externe Schnittstellen>>  erläutert.
 
 === Level 3
 

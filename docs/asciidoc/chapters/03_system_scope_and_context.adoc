@@ -121,3 +121,82 @@ Rel(python_api, robot, "Steuerbefehle", "Serial (USB)")
 Der Roboterkanal ist für zeitkritische Bewegungsbefehle zuständig, während der Weltkanal für weniger häufige Aktionen wie das Erstellen oder Löschen von Objekten verwendet wird.
 
 |===
+
+==== Beispielhafte JSON-Nachrichten
+
+Die Kommunikation zwischen Python und Unity erfolgt über strukturierte JSON-Nachrichten.
+Dabei wird zwischen Roboterbefehlen und Weltbefehlen unterschieden. Beide Nachrichtentypen
+verwenden eine gemeinsame Grundidee: Jede Nachricht enthält eine Protokollversion `v` sowie
+ein Feld `type`, das den Befehl eindeutig beschreibt.
+
+Die konkreten Nachrichten werden auf Python-Seite durch das Modul `protocol` erzeugt.
+Dadurch bleibt der Aufbau der übertragenen Daten zentral definiert und konsistent.
+
+.Beispiel einer Nachricht für eine asynchrone Gelenkbewegung
+[source,json]
+----
+{
+  "v": 1,
+  "type": "move_joints",
+  "j1": 0.0,
+  "j2": 20.0,
+  "j3": -15.0,
+  "j4": 10.0,
+  "speed": 40
+}
+----
+
+Diese Nachricht wird über den Roboterkanal an die Simulation übertragen und beschreibt den
+Soll-Zustand der vier Gelenke sowie die gewünschte Bewegungsgeschwindigkeit.
+
+.Beispiel einer Nachricht für die Werkzeugwahl
+[source,json]
+----
+{
+  "v": 1,
+  "type": "set_end_effector",
+  "tool": "gripper"
+}
+----
+
+Diese Nachricht wählt das aktive Werkzeug des Roboters. Unterstützt werden insbesondere
+`gripper` und `pump`.
+
+.Beispiel einer Nachricht für das Erzeugen eines Objekts in der Simulationswelt
+[source,json]
+----
+{
+  "v": 1,
+  "type": "spawn",
+  "object_type": "box",
+  "name": "box_1",
+  "position": {
+    "x": 0.2,
+    "y": 0.0,
+    "z": 0.1
+  },
+  "rotation": {
+    "x": 0.0,
+    "y": 0.0,
+    "z": 0.0
+  },
+  "scale": {
+    "x": 0.05,
+    "y": 0.05,
+    "z": 0.05
+  },
+  "color": {
+    "r": 255,
+    "g": 0,
+    "b": 0
+  }
+}
+----
+
+Diese Nachricht wird über den Weltkanal übertragen und beschreibt ein neues Objekt, das in
+Unity erzeugt werden soll. Neben Typ und Name enthält sie auch Transformations- und
+Darstellungsparameter wie Position, Rotation, Skalierung und Farbe.
+
+Die Beispiele zeigen bewusst nur einen kleinen Ausschnitt des Protokolls. Weitere Befehle
+wie `sync_move_joints`, `led`, `set_gripper_state`, `pump`, `delete` und `clear` folgen
+demselben Grundprinzip.
