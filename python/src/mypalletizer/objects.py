@@ -12,6 +12,7 @@ class WorldObject:
     rotation: Vec3 = (0.0, 0.0, 0.0)
     scale: Vec3 = (1.0, 1.0, 1.0)
     color: Rgb = (255, 255, 255)
+    is_static: bool = False
 
     @property
     def object_type(self) -> str:

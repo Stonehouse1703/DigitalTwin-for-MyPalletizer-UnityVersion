@@ -80,13 +80,25 @@ public class WorldSpawnManager : MonoBehaviour
             spawnedObjectsParent
         );
         
-        if (go.GetComponent<Rigidbody>() == null)
+        Rigidbody rb = go.GetComponent<Rigidbody>();
+        if (rb == null)
         {
-            Rigidbody rb = go.AddComponent<Rigidbody>();
+            rb = go.AddComponent<Rigidbody>();
             rb.mass = 0.05f;
         }
 
-        if (go.GetComponent<GrabbableObject>() == null)
+        if (msg.is_static)
+        {
+            rb.isKinematic = true;
+            rb.useGravity = false;
+        }
+        else
+        {
+            rb.isKinematic = false;
+            rb.useGravity = true;
+        }
+
+        if (!msg.is_static && go.GetComponent<GrabbableObject>() == null)
         {
             go.AddComponent<GrabbableObject>();
         }

@@ -72,3 +72,5 @@ Detailed setup, usage, and architecture are documented in the Wiki:
 👉 [Wiki](https://github.com/Stonehouse1703/DigitalTwin-for-MyPalletizer-UnityVersion/wiki)
 
 
+
+

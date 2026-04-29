@@ -25,6 +25,7 @@ class World:
             rotation=obj.rotation,
             scale=obj.scale,
             color=obj.color,
+            is_static=obj.is_static,
         )
         self._send_udp(payload)
 

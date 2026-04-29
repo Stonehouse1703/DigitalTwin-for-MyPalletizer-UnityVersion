@@ -27,4 +27,5 @@ public class WorldMessage
     public Vec3Data rotation;
     public Vec3Data scale;
     public ColorData color;
+    public bool is_static;
 }

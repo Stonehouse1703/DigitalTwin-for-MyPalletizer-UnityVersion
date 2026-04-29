@@ -1,6 +1,8 @@
 ﻿import sys
 import os
 
+import time
+
 # Add src to path for local execution without installation
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", "src"))
 
@@ -12,75 +14,112 @@ def main():
     with Robot(mode=RobotMode.VIRTUAL, ip="127.0.0.1", udp_port=5005) as robot:
         with World(ip="127.0.0.1", udp_port=5006) as world:
 
-            robot.set_end_effector(EndEffector.GRIPPER)
+            #Set Gripper State -> (Gripper or Pump)
+            robot.set_end_effector(EndEffector.PUMP)
 
+            #Set up a World
             world.clear()
-            world.load_preset("three_blocks")
+            world.load_preset("Base1")
+            time.sleep(3)
 
-            """
-            world.spawn(
-                Box(
-                    name="box1",
-                    position=(0.20, 0.05, 0.10),
-                    scale=(0.05, 0.05, 0.05),
-                    color=(255, 0, 0),
-                )
-            )
-
+            # You can also generate Pieces (Box, Cylinder, Sphere)
+            '''
             world.spawn(
                 Cylinder(
-                    name="cyl1",
-                    position=(0.25, -0.05, 0.10),
-                    scale=(0.04, 0.08, 0.04),
-                    color=(0, 0, 255),
+                    name="A31",
+                    position=(0, 0.1, -1.5),
+                    scale=(0.6, 0.06, 0.6),
+                    color=(0, 255, 255), #RGB
                 )
-            )"""
+            )
+            '''
 
-            robot.set_color(0, 255, 0)
-            #robot.send_angles(0, 0, 0, 0, 40)
-            robot.sync_move_joints(-90, 30, 0, 0, 50)
-            robot.sync_move_joints(-90, 35, 0, 0, 20)
-            robot.sleep(4)
-            robot.pump_on()
-            robot.set_gripper_state(1,50)
-            robot.sleep(1)
-            robot.sync_move_joints(0, 35, 0, 0, 40)
-            robot.sleep(2)
-            robot.pump_off()
-            robot.set_gripper_state(0, 50)
-            robot.sleep(1)
+            # Move to initial Point
+            robot.send_angles(0,0,0,0,80)
+            time.sleep(5)
 
-            robot.sync_move_joints(90, 30, 0, 0, 50)
-            robot.sync_move_joints(90, 35, 0, 0, 20)
-            robot.sleep(4)
-            robot.pump_on()
-            robot.set_gripper_state(1, 50)
-            robot.sleep(1)
-            robot.sync_move_joints(0, 25, 0, 0, 40)
-            robot.sleep(2)
-            robot.pump_off()
-            robot.set_gripper_state(0, 50)
-            robot.sleep(1)
+            # Move to every point
 
-            robot.sync_move_joints(0, 0, 0, 0, 50)
-            robot.sync_move_joints(90, 62, -90, 0, 50)
-            robot.sync_move_joints(90, 69, -90, 0, 20)
-            robot.sleep(4)
-            robot.pump_on()
-            robot.set_gripper_state(1, 50)
-            robot.sleep(2)
-            robot.sync_move_joints(0, 25, 0, 0, 40)
-            robot.sleep(5)
-            robot.pump_off()
-            robot.set_gripper_state(0, 50)
-            robot.sleep(2)
+            # Move to Point 11
+            robot.send_angles(-72,40,20,0,80)
+            # i recoment to make after every move a timeout!
+            time.sleep(1)
+            robot.send_angles(-72, 50, 25, 0,80)
+            time.sleep(3)
+            robot.send_angles(-72, 40, 20, 0, 80)
+            time.sleep(1)
 
-            robot.sync_move_joints(90, 50, 0, 0, 50)
-            robot.sync_move_joints(-90, 50, 0, 0, 50)
+            # Move to Point 12
+            robot.send_angles(-107, 40, 15, 0, 80)
+            # i recoment to make after every move a timeout!
+            time.sleep(1)
+            robot.send_angles(-107, 50, 25, 0, 80)
+            time.sleep(3)
+            robot.send_angles(-107, 40, 15, 0, 80)
+            time.sleep(1)
 
+            # Move to Point 13
+            robot.send_angles(-135, 50, -5, 0, 80)
+            # i recoment to make after every move a timeout!
+            time.sleep(1)
+            robot.send_angles(-135, 55, 5, 0, 80)
+            time.sleep(3)
+            robot.send_angles(-135, 50, -5, 0, 80)
+            time.sleep(1)
 
+            # Move to Point 21
+            robot.send_angles(72, 40, 20, 0, 80)
+            # i recoment to make after every move a timeout!
+            time.sleep(2)
+            robot.send_angles(72, 50, 25, 0, 80)
+            time.sleep(3)
+            robot.send_angles(72, 40, 20, 0, 80)
+            time.sleep(1)
 
+            # Move to Point 22
+            robot.send_angles(107, 50, 15, 0, 80)
+            # i recoment to make after every move a timeout!
+            time.sleep(1)
+            robot.send_angles(107, 50, 25, 0, 80)
+            time.sleep(3)
+            robot.send_angles(107, 50, 15, 0, 80)
+            time.sleep(1)
 
+            # Move to Point 23
+            robot.send_angles(135, 50, -5, 0, 80)
+            # i recoment to make after every move a timeout!
+            time.sleep(1)
+            robot.send_angles(135, 55, 5, 0, 80)
+            time.sleep(3)
+            robot.send_angles(135, 50, -5, 0, 80)
+            time.sleep(2)
+
+            # Move to Point 31
+            robot.send_angles(77, 0, 0, 0, 80)
+            # i recoment to make after every move a timeout!
+            time.sleep(2)
+            robot.send_angles(77, 70, -40, 0, 80)
+            time.sleep(3)
+            robot.send_angles(77, 0, 0, 0, 80)
+            time.sleep(2)
+
+            # Move to Point 32
+            robot.send_angles(103, 0, 0, 0, 80)
+            # i recoment to make after every move a timeout!
+            time.sleep(2)
+            robot.send_angles(103, 70, -30, 0, 80)
+            time.sleep(3)
+            robot.send_angles(103, 0, 0, 0, 80)
+            time.sleep(2)
+
+            # Move to Point 33
+            robot.send_angles(120, 0, 0, 0, 80)
+            # i recoment to make after every move a timeout!
+            time.sleep(2)
+            robot.send_angles(120, 80, -55, 0, 80)
+            time.sleep(3)
+            robot.send_angles(120, 0, 0, 0, 80)
+            time.sleep(2)
 
 if __name__ == "__main__":
     main()

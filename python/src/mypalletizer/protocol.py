@@ -68,6 +68,7 @@ def build_spawn_msg(
     rotation: tuple[float, float, float],
     scale: tuple[float, float, float],
     color: tuple[int, int, int],
+    is_static: bool = False,
 ) -> dict:
     return {
         "v": 1,
@@ -94,6 +95,7 @@ def build_spawn_msg(
             "g": int(color[1]),
             "b": int(color[2]),
         },
+        "is_static": bool(is_static),
     }
 
 
