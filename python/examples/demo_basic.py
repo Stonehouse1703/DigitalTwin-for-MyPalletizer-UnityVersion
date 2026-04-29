@@ -11,18 +11,28 @@ from mypalletizer.robot import EndEffector
 
 
 def main():
-    with Robot(mode=RobotMode.VIRTUAL, ip="127.0.0.1", udp_port=5005) as robot:
-        with World(ip="127.0.0.1", udp_port=5006) as world:
+    # Select the execution mode:
+    # VIRTUAL = simulation only
+    # REAL    = real robot only
+    # BOTH    = simulation and real robot at the same time
+    #
+    # When using REAL or BOTH, make sure that the correct serial port is set.
+    # If the robot cannot be reached, an error message will be shown.
+    with Robot(mode=RobotMode.VIRTUAL, port="COM7") as robot:
+        with World() as world:
 
-            #Set Gripper State -> (Gripper or Pump)
+            # Select the active end effector: gripper or suction pump
             robot.set_end_effector(EndEffector.PUMP)
 
-            #Set up a World
+            # Reset and prepare the simulation environment
             world.clear()
+
+            # there are diffrent presets, look Documentation for that.
             world.load_preset("Base1")
             time.sleep(3)
 
-            # You can also generate Pieces (Box, Cylinder, Sphere)
+            # Optional: spawn additional objects in the scene
+            # Available object types include Box, Cylinder and Sphere
             '''
             world.spawn(
                 Cylinder(
@@ -34,15 +44,17 @@ def main():
             )
             '''
 
-            # Move to initial Point
+            # Move the robot to the initial position
             robot.send_angles(0,0,0,0,80)
             time.sleep(5)
 
-            # Move to every point
+            # Move to each predefined point
 
-            # Move to Point 11
+            # Move to point 11
             robot.send_angles(-72,40,20,0,80)
-            # i recoment to make after every move a timeout!
+
+            # It is recommended to add a short delay after each movement
+            # so the robot has enough time to reach the target position.
             time.sleep(1)
             robot.send_angles(-72, 50, 25, 0,80)
             time.sleep(3)

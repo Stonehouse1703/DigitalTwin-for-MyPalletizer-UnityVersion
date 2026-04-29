@@ -919,7 +919,7 @@ Transform:
   m_GameObject: {fileID: 492793408}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: -5, z: -5.05}
+  m_LocalPosition: {x: 0, y: -4.9, z: -5.05}
   m_LocalScale: {x: 24.405, y: 1, z: 12.268}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -1987,7 +1987,7 @@ Transform:
   m_GameObject: {fileID: 1255215231}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0.32, z: 0}
+  m_LocalPosition: {x: 0, y: 0.443, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -2139,7 +2139,7 @@ ArticulationBody:
   m_Enabled: 1
   serializedVersion: 6
   m_Mass: 1
-  m_ParentAnchorPosition: {x: 0.0024, y: -0.11500001, z: -0.34177005}
+  m_ParentAnchorPosition: {x: 0.0024, y: -0.11500025, z: -0.34177005}
   m_ParentAnchorRotation: {x: 0.70710677, y: -0.70710677, z: -0.00000003090862, w: -0.00000003090862}
   m_AnchorPosition: {x: 0, y: 0, z: 0}
   m_AnchorRotation: {x: 0.70710677, y: -0.70710677, z: -0.00000003090862, w: -0.00000003090862}
@@ -2982,10 +2982,10 @@ ArticulationBody:
   m_Enabled: 1
   serializedVersion: 6
   m_Mass: 1
-  m_ParentAnchorPosition: {x: 0, y: 1.3000001, z: 0}
-  m_ParentAnchorRotation: {x: 0, y: 1, z: 0, w: -0.00000004371139}
+  m_ParentAnchorPosition: {x: 0, y: 1.2999998, z: 0}
+  m_ParentAnchorRotation: {x: 1.6763371e-10, y: 0.99999267, z: 0.0038350122, w: -0.00000004371107}
   m_AnchorPosition: {x: 0, y: 0, z: 0}
-  m_AnchorRotation: {x: 0, y: 1, z: 0, w: -0.00000004371139}
+  m_AnchorRotation: {x: 1.6763371e-10, y: 0.99999267, z: 0.0038350122, w: -0.00000004371107}
   m_MatchAnchors: 1
   m_ArticulationJointType: 2
   m_LinearX: 2
@@ -3443,7 +3443,7 @@ ArticulationBody:
   m_Enabled: 1
   serializedVersion: 6
   m_Mass: 1
-  m_ParentAnchorPosition: {x: -0.0024, y: 1.1500001, z: 0}
+  m_ParentAnchorPosition: {x: -0.0024, y: 1.15, z: 0}
   m_ParentAnchorRotation: {x: -0.00000003090862, y: 0.70710677, z: -0.70710677, w: -0.00000003090862}
   m_AnchorPosition: {x: 0, y: 0, z: 0}
   m_AnchorRotation: {x: -0.00000003090862, y: 0.70710677, z: -0.70710677, w: -0.00000003090862}
@@ -5541,10 +5541,10 @@ CapsuleCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 2
-  m_Radius: 12.281689
-  m_Height: 69.469475
+  m_Radius: 12.169449
+  m_Height: 82.84559
   m_Direction: 2
-  m_Center: {x: 1.3800025, y: -0.557001, z: 43.84266}
+  m_Center: {x: -56.06288, y: -0.5570025, z: 43.84266}
 --- !u!54 &8960613936978878517
 Rigidbody:
   m_ObjectHideFlags: 0
